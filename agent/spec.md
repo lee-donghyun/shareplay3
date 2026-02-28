@@ -39,7 +39,6 @@
   - `handle` (text, unique, not null) — 프로필 공개 URL 기준
   - `message` (text, default '')
   - `avatar_url` (text, nullable)
-  - `display_name` (text, not null)
   - `created_at` (timestamptz, default now())
   - `updated_at` (timestamptz, default now())
 

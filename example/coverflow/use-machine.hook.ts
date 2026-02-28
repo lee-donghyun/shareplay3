@@ -20,7 +20,7 @@ export const make = <
       ...payload: Parameters<Actions[ActionKey]>
     ) => {
       if (!machine.states[state].includes(actionKey)) {
-        if (import.meta.env.DEV) {
+        if (process.env.NODE_ENV === "development") {
           throw new Error(
             `Action ${actionKey as string} is not defined for state ${
               state as string
