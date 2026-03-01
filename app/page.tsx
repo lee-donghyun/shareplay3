@@ -11,12 +11,12 @@ export default async function Home() {
     // Check if user has profile
     const { data: profile } = await supabase
       .from("profiles")
-      .select("id")
+      .select("id,handle")
       .eq("id", user.id)
       .single();
 
     if (profile) {
-      redirect("/my");
+      redirect(`/u/${profile.handle}`);
     } else {
       redirect("/auth/onboarding");
     }
