@@ -6,35 +6,54 @@ interface TrackListItemProps {
   track: PlaylistTrack | ITunesTrack;
   action?: "add" | "added" | "none";
   onAdd?: () => void;
+  dragHandleProps?: React.HTMLAttributes<HTMLDivElement>;
 }
 
 function isITunesTrack(
-  track: PlaylistTrack | ITunesTrack
+  track: PlaylistTrack | ITunesTrack,
 ): track is ITunesTrack {
   return "trackId" in track;
 }
 
-export function TrackListItem({ track, action = "none", onAdd }: TrackListItemProps) {
+export function TrackListItem({
+  track,
+  action = "none",
+  onAdd,
+  dragHandleProps,
+}: TrackListItemProps) {
   const artworkUrl = isITunesTrack(track)
     ? track.artworkUrl100
     : track.artwork_url;
-  const trackName = isITunesTrack(track)
-    ? track.trackName
-    : track.track_name;
+  const trackName = isITunesTrack(track) ? track.trackName : track.track_name;
   const artistName = isITunesTrack(track)
     ? track.artistName
     : track.artist_name;
 
   return (
     <div className="flex items-center gap-3 py-3 px-4">
+      {dragHandleProps && (
+        <div
+          {...dragHandleProps}
+          className="shrink-0 cursor-grab active:cursor-grabbing touch-none text-muted-foreground"
+        >
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+            <circle cx="5" cy="3" r="1.5" />
+            <circle cx="11" cy="3" r="1.5" />
+            <circle cx="5" cy="8" r="1.5" />
+            <circle cx="11" cy="8" r="1.5" />
+            <circle cx="5" cy="13" r="1.5" />
+            <circle cx="11" cy="13" r="1.5" />
+          </svg>
+        </div>
+      )}
       {artworkUrl ? (
         <img
           src={artworkUrl}
           alt={trackName}
-          className="w-12 h-12 rounded-md object-cover flex-shrink-0"
+          className="w-12 h-12 rounded-md object-cover shrink-0"
         />
       ) : (
-        <div className="w-12 h-12 rounded-md bg-muted flex items-center justify-center flex-shrink-0">
+        <div className="w-12 h-12 rounded-md bg-muted flex items-center justify-center shrink-0">
           <span className="text-xs text-muted-foreground">♪</span>
         </div>
       )}
@@ -47,15 +66,13 @@ export function TrackListItem({ track, action = "none", onAdd }: TrackListItemPr
       {action === "add" && (
         <button
           onClick={onAdd}
-          className="text-sm text-primary font-medium flex-shrink-0 hover:underline"
+          className="text-sm text-primary font-medium shrink-0 hover:underline"
         >
           Add
         </button>
       )}
       {action === "added" && (
-        <span className="text-sm text-muted-foreground flex-shrink-0">
-          Added
-        </span>
+        <span className="text-sm text-muted-foreground shrink-0">Added</span>
       )}
     </div>
   );

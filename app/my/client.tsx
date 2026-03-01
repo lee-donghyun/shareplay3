@@ -1,7 +1,9 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useLayoutEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useDrag } from "@use-gesture/react";
+import { animated, useSprings } from "@react-spring/web";
 import { Header } from "@/components/header";
 import { TrackListItem } from "@/components/track-list-item";
 import { createClient } from "@/lib/supabase/client";
@@ -9,6 +11,204 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import type { Profile, PlaylistTrack } from "@/lib/types";
+
+const SWIPE_THRESHOLD = 50;
+const DELETE_BUTTON_WIDTH = 80;
+const ITEM_HEIGHT = 72;
+
+function swap<T>(arr: T[], from: number, to: number): T[] {
+  const copy = [...arr];
+  const [val] = copy.splice(from, 1);
+  copy.splice(to, 0, val);
+  return copy;
+}
+
+function clamp(n: number, min: number, max: number) {
+  return Math.max(min, Math.min(n, max));
+}
+
+function TrackList({
+  tracks,
+  onDelete,
+  onReorder,
+}: {
+  tracks: PlaylistTrack[];
+  onDelete: (id: string) => void;
+  onReorder: (newTracks: PlaylistTrack[]) => void;
+}) {
+  const order = useRef(tracks.map((_, i) => i));
+  const swipedState = useRef(tracks.map(() => false));
+  const tracksRef = useRef(tracks);
+
+  useLayoutEffect(() => {
+    tracksRef.current = tracks;
+  });
+
+  const [springs, api] = useSprings(tracks.length, (i) => ({
+    y: i * ITEM_HEIGHT,
+    x: 0,
+    scale: 1,
+    zIndex: 0,
+    shadow: 0,
+    config: { tension: 300, friction: 30 },
+  }));
+
+  const trackIds = tracks.map((t) => t.id).join(",");
+  useLayoutEffect(() => {
+    order.current = tracks.map((_, i) => i);
+    swipedState.current = tracks.map(() => false);
+    api.set((i) => ({
+      y: i * ITEM_HEIGHT,
+      x: 0,
+      scale: 1,
+      zIndex: 0,
+      shadow: 0,
+    }));
+  }, [trackIds, api, tracks]);
+
+  // Y-axis drag for reorder (handle only)
+  const handleBind = useDrag(
+    ({ args: [originalIndex], active, movement: [, my] }) => {
+      const idx = originalIndex as number;
+      const curIndex = order.current.indexOf(idx);
+      const curRow = clamp(
+        Math.round((curIndex * ITEM_HEIGHT + my) / ITEM_HEIGHT),
+        0,
+        tracksRef.current.length - 1,
+      );
+      const newOrder = swap(order.current, curIndex, curRow);
+
+      // Close any swiped item when starting drag
+      swipedState.current.forEach((s, i) => {
+        if (s) {
+          swipedState.current[i] = false;
+          api.start((j) => (j === i ? { x: 0, immediate: false } : {}));
+        }
+      });
+
+      api.start((i) => {
+        if (active && i === idx) {
+          return {
+            y: curIndex * ITEM_HEIGHT + my,
+            scale: 1.03,
+            zIndex: 1,
+            shadow: 8,
+            immediate: (key: string) => key === "y" || key === "zIndex",
+          };
+        }
+        return {
+          y: newOrder.indexOf(i) * ITEM_HEIGHT,
+          scale: 1,
+          zIndex: 0,
+          shadow: 0,
+          immediate: false,
+        };
+      });
+
+      if (!active) {
+        order.current = newOrder;
+        const reordered = newOrder.map((i) => tracksRef.current[i]);
+        onReorder(reordered);
+      }
+    },
+    {
+      axis: "y",
+      filterTaps: true,
+    },
+  );
+
+  // X-axis swipe for delete (item body)
+  const swipeBind = useDrag(
+    ({
+      args: [originalIndex],
+      active,
+      movement: [mx],
+      last,
+      direction: [dx],
+      cancel,
+    }) => {
+      const idx = originalIndex as number;
+      const isSwiped = swipedState.current[idx];
+      const effectiveX = isSwiped ? -DELETE_BUTTON_WIDTH + mx : mx;
+
+      if (active && Math.abs(effectiveX) > 200) {
+        cancel();
+      }
+
+      // Close any other swiped item
+      swipedState.current.forEach((s, i) => {
+        if (s && i !== idx) {
+          swipedState.current[i] = false;
+          api.start((j) => (j === i ? { x: 0, immediate: false } : {}));
+        }
+      });
+
+      if (last) {
+        if (effectiveX < -SWIPE_THRESHOLD && dx < 0) {
+          swipedState.current[idx] = true;
+          api.start((i) =>
+            i === idx ? { x: -DELETE_BUTTON_WIDTH, immediate: false } : {},
+          );
+        } else {
+          swipedState.current[idx] = false;
+          api.start((i) => (i === idx ? { x: 0, immediate: false } : {}));
+        }
+      } else {
+        api.start((i) =>
+          i === idx ? { x: Math.min(0, effectiveX), immediate: true } : {},
+        );
+      }
+    },
+    {
+      axis: "x",
+      filterTaps: true,
+    },
+  );
+
+  if (tracks.length === 0) return null;
+
+  return (
+    <div className="relative" style={{ height: tracks.length * ITEM_HEIGHT }}>
+      {springs.map(({ y, x, scale, zIndex, shadow }, i) => (
+        <animated.div
+          key={i}
+          className="absolute w-full origin-center overflow-hidden bg-background"
+          style={{
+            y,
+            scale,
+            zIndex,
+            height: ITEM_HEIGHT,
+            boxShadow: shadow.to(
+              (s) => `rgba(0, 0, 0, 0.12) 0px ${s}px ${2 * s}px 0px`,
+            ),
+          }}
+        >
+          <animated.div {...swipeBind(i)} style={{ x, touchAction: "pan-y" }}>
+            <TrackListItem track={tracks[i]} dragHandleProps={handleBind(i)} />
+          </animated.div>
+          <animated.div
+            className="absolute right-0 top-0 bottom-0 flex items-center justify-center"
+            style={{
+              width: x.to(
+                (xv) => `${Math.min(Math.abs(xv), DELETE_BUTTON_WIDTH)}px`,
+              ),
+              opacity: x.to((xv) =>
+                Math.min(Math.abs(xv) / DELETE_BUTTON_WIDTH, 1),
+              ),
+            }}
+          >
+            <button
+              onClick={() => onDelete(tracks[i].id)}
+              className="h-full w-full bg-destructive text-white flex items-center justify-center text-sm font-medium"
+            >
+              Delete
+            </button>
+          </animated.div>
+        </animated.div>
+      ))}
+    </div>
+  );
+}
 
 export function MyPageClient({
   profile: initialProfile,
@@ -24,15 +224,6 @@ export function MyPageClient({
   const [editHandle, setEditHandle] = useState(profile.handle);
   const [editMessage, setEditMessage] = useState(profile.message);
   const [saving, setSaving] = useState(false);
-
-  // Drag and drop state
-  const [dragIndex, setDragIndex] = useState<number | null>(null);
-  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
-  const touchStartY = useRef<number>(0);
-  const touchStartX = useRef<number>(0);
-
-  // Swipe to delete state
-  const [swipedIndex, setSwipedIndex] = useState<number | null>(null);
 
   const handleEditProfile = async () => {
     setSaving(true);
@@ -62,78 +253,26 @@ export function MyPageClient({
     }
   };
 
-  const handleDeleteTrack = async (trackId: string) => {
+  const handleDeleteTrack = useCallback(async (trackId: string) => {
     const supabase = createClient();
     await supabase.from("playlist_tracks").delete().eq("id", trackId);
     setTracks((prev) => prev.filter((t) => t.id !== trackId));
-    setSwipedIndex(null);
-  };
+  }, []);
 
-  const handleDragStart = (index: number) => {
-    setDragIndex(index);
-  };
+  const handleReorder = useCallback(async (newTracks: PlaylistTrack[]) => {
+    const updatedTracks = newTracks.map((t, i) => ({ ...t, position: i }));
+    setTracks(updatedTracks);
 
-  const handleDragOver = (e: React.DragEvent, index: number) => {
-    e.preventDefault();
-    setDragOverIndex(index);
-  };
-
-  const handleDrop = useCallback(
-    async (targetIndex: number) => {
-      if (dragIndex === null || dragIndex === targetIndex) {
-        setDragIndex(null);
-        setDragOverIndex(null);
-        return;
-      }
-
-      const newTracks = [...tracks];
-      const [movedTrack] = newTracks.splice(dragIndex, 1);
-      newTracks.splice(targetIndex, 0, movedTrack);
-
-      // Update positions
-      const updatedTracks = newTracks.map((t, i) => ({
-        ...t,
-        position: i,
-      }));
-
-      setTracks(updatedTracks);
-      setDragIndex(null);
-      setDragOverIndex(null);
-
-      // Persist new positions
-      const supabase = createClient();
-      await Promise.all(
-        updatedTracks.map((t) =>
-          supabase
-            .from("playlist_tracks")
-            .update({ position: t.position })
-            .eq("id", t.id)
-        )
-      );
-    },
-    [dragIndex, tracks]
-  );
-
-  // Touch-based swipe for delete
-  const handleTouchStart = (e: React.TouchEvent, index: number) => {
-    touchStartX.current = e.touches[0].clientX;
-    touchStartY.current = e.touches[0].clientY;
-    // Close any open swipe
-    if (swipedIndex !== index) {
-      setSwipedIndex(null);
-    }
-  };
-
-  const handleTouchEnd = (e: React.TouchEvent, index: number) => {
-    const deltaX = e.changedTouches[0].clientX - touchStartX.current;
-    const deltaY = e.changedTouches[0].clientY - touchStartY.current;
-
-    if (Math.abs(deltaX) > Math.abs(deltaY) && deltaX < -50) {
-      setSwipedIndex(index);
-    } else if (deltaX > 50) {
-      setSwipedIndex(null);
-    }
-  };
+    const supabase = createClient();
+    await Promise.all(
+      updatedTracks.map((t) =>
+        supabase
+          .from("playlist_tracks")
+          .update({ position: t.position })
+          .eq("id", t.id),
+      ),
+    );
+  }, []);
 
   return (
     <div className="min-h-dvh flex flex-col">
@@ -169,46 +308,11 @@ export function MyPageClient({
       </div>
 
       <div className="flex-1 mt-6">
-        <div className="divide-y divide-border">
-          {tracks.map((track, index) => (
-            <div
-              key={track.id}
-              className={`relative overflow-hidden transition-colors ${
-                dragOverIndex === index ? "bg-accent/50" : ""
-              }`}
-              draggable
-              onDragStart={() => handleDragStart(index)}
-              onDragOver={(e) => handleDragOver(e, index)}
-              onDrop={() => handleDrop(index)}
-              onDragEnd={() => {
-                setDragIndex(null);
-                setDragOverIndex(null);
-              }}
-              onTouchStart={(e) => handleTouchStart(e, index)}
-              onTouchEnd={(e) => handleTouchEnd(e, index)}
-            >
-              <div
-                className="transition-transform duration-200"
-                style={{
-                  transform:
-                    swipedIndex === index
-                      ? "translateX(-80px)"
-                      : "translateX(0)",
-                }}
-              >
-                <TrackListItem track={track} />
-              </div>
-              {swipedIndex === index && (
-                <button
-                  onClick={() => handleDeleteTrack(track.id)}
-                  className="absolute right-0 top-0 bottom-0 w-20 bg-destructive text-white flex items-center justify-center text-sm font-medium"
-                >
-                  Delete
-                </button>
-              )}
-            </div>
-          ))}
-        </div>
+        <TrackList
+          tracks={tracks}
+          onDelete={handleDeleteTrack}
+          onReorder={handleReorder}
+        />
 
         <div className="px-4 py-6">
           <button
