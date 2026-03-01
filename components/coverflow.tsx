@@ -10,22 +10,18 @@ import { make } from "@/example/coverflow/use-machine.hook";
 enum State {
   IDLE,
   DRAGGING,
-  MODAL,
 }
 
 type Action = {
   drag: (movementX: number) => State.DRAGGING;
-  openModal: (target: number) => State.MODAL;
-  closeModal: () => State.IDLE;
   selectCover: (target: number) => State.IDLE;
 };
 
 const useCoverflowMachine = make<State, Action>({
   initial: State.IDLE,
   states: {
-    [State.IDLE]: ["drag", "openModal", "selectCover"],
+    [State.IDLE]: ["drag", "selectCover"],
     [State.DRAGGING]: ["drag", "selectCover"],
-    [State.MODAL]: ["closeModal"],
   },
 });
 
@@ -114,7 +110,6 @@ export function Coverflow({
   });
 
   const coverUtil = useMemo(() => new CoverUtil(size), [size]);
-  const modalUtil = useMemo(() => new ModalUtil(), []);
 
   const [current, setCurrent] = useState(0);
 
@@ -122,16 +117,16 @@ export function Coverflow({
     return coverUtil.getTransform(score);
   });
 
-  const [, modalApi] = useSpring(() => modalUtil.getInvisibleTransform());
-
   const { state, dispatch } = useCoverflowMachine({
     drag: (movementX) => {
       const { prevCurrent } = memo.current;
+
       const diffScore = coverUtil.getDiffScore(
         movementX,
         prevCurrent,
-        covers.length
+        covers.length,
       );
+
       coversApi.start((index) => {
         const score = index - prevCurrent + diffScore;
         if (Math.abs(score) <= 0.5) {
@@ -141,29 +136,13 @@ export function Coverflow({
         }
         return coverUtil.getTransform(score);
       });
+
       return State.DRAGGING;
-    },
-    openModal: (target) => {
-      onSelected?.(target);
-      coversApi.start((index) => {
-        if (index === target) {
-          modalApi.start(modalUtil.getVisibleTransform());
-          return modalUtil.getFlippedCoverTransform();
-        }
-      });
-      return State.MODAL;
-    },
-    closeModal: () => {
-      modalApi.start(modalUtil.getInvisibleTransform());
-      coversApi.start((index) => ({
-        ...coverUtil.getTransform(index - current),
-        delay: modalUtil.delay,
-      }));
-      return State.IDLE;
     },
     selectCover: (target) => {
       setCurrent(target);
       onChange?.(target);
+      onSelected?.(target);
       memo.current.prevCurrent = target;
       coversApi.start((index) => {
         return coverUtil.getTransform(index - target);
@@ -186,7 +165,7 @@ export function Coverflow({
 
   const bind = useGesture(
     { onDrag: dragHandler, onWheel: dragHandler },
-    { drag: { keyboardDisplacement: size / 10, threshold: 10 } }
+    { drag: { keyboardDisplacement: size / 10, threshold: 10 } },
   );
 
   const perspective = coverUtil.perspective;
@@ -221,22 +200,12 @@ export function Coverflow({
               meta={coverData[index]}
               size={size}
               onSelect={() => {
-                if (current === index) {
-                  dispatch("openModal", index);
-                  return;
-                }
                 dispatch("selectCover", index);
               }}
             />
           </animated.div>
         ))}
       </div>
-      {state === State.MODAL && (
-        <div
-          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center"
-          onClick={() => dispatch("closeModal")}
-        />
-      )}
     </div>
   );
 }
