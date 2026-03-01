@@ -20,7 +20,17 @@ export function ProfilePageClient({
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [addedTracks, setAddedTracks] = useState<Set<number>>(new Set());
+  const [isOwner, setIsOwner] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user && user.id === profile.id) {
+        setIsOwner(true);
+      }
+    });
+  }, [profile.id]);
 
   const coverData: CoverData[] = tracks.map((t) => ({
     src: t.artwork_url ? getHighResArtwork(t.artwork_url) : "",
@@ -110,9 +120,6 @@ export function ProfilePageClient({
 
     setAddedTracks((prev) => new Set(prev).add(currentTrack.track_id));
   };
-
-  const isOwner =
-    typeof window !== "undefined" && false; // Owner check handled by /my page
 
   return (
     <div className="min-h-dvh flex flex-col bg-black">

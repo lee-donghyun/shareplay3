@@ -244,15 +244,6 @@ export function MyPageClient({
     setSaving(false);
   };
 
-  const handleShare = async () => {
-    if (navigator.share) {
-      await navigator.share({
-        title: `${profile.handle}'s Shareplay`,
-        url: `${window.location.origin}/u/${profile.handle}`,
-      });
-    }
-  };
-
   const handleDeleteTrack = useCallback(async (trackId: string) => {
     const supabase = createClient();
     await supabase.from("playlist_tracks").delete().eq("id", trackId);
@@ -291,12 +282,6 @@ export function MyPageClient({
             )}
           </div>
           <div className="flex gap-2">
-            <button
-              onClick={handleShare}
-              className="text-sm text-primary hover:underline"
-            >
-              Share
-            </button>
             <button
               onClick={() => setEditModalOpen(true)}
               className="text-sm text-primary hover:underline"
