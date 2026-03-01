@@ -1,6 +1,7 @@
 "use client";
 
 import { createClient } from "@/lib/supabase/client";
+import { Header } from "@/components/header";
 
 export default function LoginPage() {
   const handleGoogleLogin = async () => {
@@ -15,11 +16,7 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-dvh flex flex-col">
-      <header className="flex items-center px-4 py-3">
-        <span className="font-[family-name:var(--font-geist-sans)] font-semibold text-lg text-white">
-          Shareplay
-        </span>
-      </header>
+      <Header left="none" right="none" />
 
       <div className="flex-1 flex items-center justify-center px-4">
         <div className="w-full max-w-sm space-y-6">

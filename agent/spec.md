@@ -111,7 +111,12 @@
   - none(default): 표시하지 않음
   - profile:
     - 로그인한 유저
-      - 이름과 프로필 사진 (선택 시 유저 프로필 페이지로 이동)
+      - 이름과 프로필 사진
+      - 선택시 드랍다운 오픈
+        - title: "{user handle}"
+        - "My Shareplay" (/u/{user handle} 페이지로 이동)
+        - "My Profile" (/my 페이지로 이동)
+        - "Logout" (로그아웃)
     - 로그인하지 않은 유저
       - 로그인 버튼 (유저 인증 페이지로 이동)
 
