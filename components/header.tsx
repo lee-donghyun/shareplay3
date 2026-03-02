@@ -55,7 +55,7 @@ export function Header({ left = "muted", right = "none" }: HeaderProps) {
   };
 
   return (
-    <header className="sticky top-0 z-50 flex items-center justify-between px-4 py-3 backdrop-blur-md bg-background/80">
+    <header className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4 py-3 backdrop-blur-md bg-background/80">
       <Link href="/">
         <span
           className={`font-[family-name:var(--font-geist-sans)] font-semibold text-lg ${

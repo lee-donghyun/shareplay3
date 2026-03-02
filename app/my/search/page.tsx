@@ -18,7 +18,7 @@ export default function SearchPage() {
   const [loading, setLoading] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(null);
   const undoTimeoutRefs = useRef<Map<number, ReturnType<typeof setTimeout>>>(
-    new Map()
+    new Map(),
   );
 
   // Load existing track IDs
@@ -57,8 +57,8 @@ export default function SearchPage() {
       try {
         const res = await fetch(
           `https://itunes.apple.com/search?term=${encodeURIComponent(
-            query
-          )}&entity=song&limit=20`
+            query,
+          )}&entity=song&limit=20`,
         );
         const data = await res.json();
         setResults(data.results ?? []);
@@ -138,7 +138,7 @@ export default function SearchPage() {
         duration: 5000,
       });
     },
-    [addedTrackIds]
+    [addedTrackIds],
   );
 
   // Cleanup undo timeouts
@@ -149,7 +149,7 @@ export default function SearchPage() {
   }, []);
 
   return (
-    <div className="min-h-dvh flex flex-col">
+    <div className="min-h-dvh flex flex-col pt-[52px]">
       <Header left="muted" right="profile" />
 
       <div className="px-4 pt-4 space-y-4">

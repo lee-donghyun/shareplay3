@@ -122,7 +122,7 @@ export function ProfilePageClient({
   };
 
   return (
-    <div className="min-h-dvh flex flex-col bg-black">
+    <div className="min-h-dvh flex flex-col bg-black pt-[52px]">
       <Header left="muted" right="profile" />
 
       <div className="px-4 pt-4">
@@ -150,7 +150,7 @@ export function ProfilePageClient({
 
       {tracks.length > 0 ? (
         <>
-          <div className="flex-1 flex items-center">
+          <div className="flex-1 flex items-center pb-48">
             <div className="w-full relative">
               <Coverflow
                 covers={coverData}
@@ -161,7 +161,7 @@ export function ProfilePageClient({
           </div>
 
           {/* Track info overlay */}
-          <div className="px-6 pb-8 space-y-4 bg-gradient-to-t from-black/90 via-black/60 to-transparent backdrop-blur-xs">
+          <div className="fixed bottom-0 left-0 right-0 px-6 pb-8 pt-4 space-y-4 bg-gradient-to-t from-black/90 via-black/60 to-transparent backdrop-blur-xs z-50">
             <div className="text-center space-y-1">
               <p className="text-lg font-semibold text-foreground">
                 {currentTrack?.track_name}

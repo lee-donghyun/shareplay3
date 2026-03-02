@@ -15,7 +15,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-dvh flex flex-col">
+    <div className="min-h-dvh flex flex-col pt-[52px]">
       <Header left="none" right="none" />
 
       <div className="flex-1 flex items-center justify-center px-4">

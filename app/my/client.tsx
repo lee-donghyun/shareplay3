@@ -266,7 +266,7 @@ export function MyPageClient({
   }, []);
 
   return (
-    <div className="min-h-dvh flex flex-col">
+    <div className="min-h-dvh flex flex-col pt-[52px]">
       <Header left="muted" right="profile" />
 
       <div className="px-4 pt-4">
