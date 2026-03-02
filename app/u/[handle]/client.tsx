@@ -151,7 +151,7 @@ export function ProfilePageClient({
       {tracks.length > 0 ? (
         <>
           <div className="flex-1 flex items-center">
-            <div className="w-full">
+            <div className="w-full relative">
               <Coverflow
                 covers={coverData}
                 size={200}

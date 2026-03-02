@@ -1,10 +1,9 @@
 "use client";
 
-import { animated, useSpring, useSprings } from "@react-spring/web";
+import { animated, useSprings } from "@react-spring/web";
 import { Handler, useGesture } from "@use-gesture/react";
 import { useMemo, useRef, useState } from "react";
 import { Util as CoverUtil } from "@/example/coverflow/cover.util";
-import { Util as ModalUtil } from "@/example/coverflow/modal.util";
 import { make } from "@/example/coverflow/use-machine.hook";
 
 enum State {
@@ -53,8 +52,8 @@ function CoverItem({
   return (
     <div className="relative" style={{ width: size, height: size }}>
       <div
-        className="absolute bottom-0 left-0 right-0 bg-black"
-        style={{ height: size }}
+        className="absolute left-0 right-0 bg-black"
+        style={{ top: "100%", height: size }}
       />
       <button
         className="relative block touch-none"
@@ -82,7 +81,7 @@ function CoverItem({
             width: size,
             height: size,
             WebkitBoxReflect:
-              "below 0px -webkit-linear-gradient(bottom, rgba(255,255,255,0.3) 0%, transparent 40%)",
+              "below 0 linear-gradient(to bottom, transparent, rgba(0, 0, 0, 0.4))",
           }}
           src={meta.src}
           alt={meta.title}
@@ -114,10 +113,10 @@ export function Coverflow({
   const [current, setCurrent] = useState(0);
 
   const [covers, coversApi] = useSprings(coverData.length, (score) => {
-    return coverUtil.getTransform(score);
+    return { from: coverUtil.getTransform(score) };
   });
 
-  const { state, dispatch } = useCoverflowMachine({
+  const { dispatch } = useCoverflowMachine({
     drag: (movementX) => {
       const { prevCurrent } = memo.current;
 
@@ -145,7 +144,7 @@ export function Coverflow({
       onSelected?.(target);
       memo.current.prevCurrent = target;
       coversApi.start((index) => {
-        return coverUtil.getTransform(index - target);
+        return { to: coverUtil.getTransform(index - target) };
       });
       return State.IDLE;
     },
@@ -189,10 +188,9 @@ export function Coverflow({
           // @ts-ignore
           <animated.div
             key={index}
-            className="absolute top-0 left-0 will-change-transform"
+            className="absolute top-0 left-0"
             style={{
               zIndex: covers.length - Math.abs(current - index),
-              transformStyle: "preserve-3d",
               ...props,
             }}
           >
