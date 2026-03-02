@@ -55,66 +55,68 @@ export function Header({ left = "muted", right = "none" }: HeaderProps) {
   };
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4 py-3 backdrop-blur-md bg-background/80">
-      <Link href="/">
-        <span
-          className={`font-[family-name:var(--font-geist-sans)] font-semibold text-lg ${
-            left === "none" ? "text-white" : "text-muted-foreground"
-          }`}
-        >
-          Shareplay
-        </span>
-      </Link>
+    <header className="fixed top-0 left-0 right-0 z-50 backdrop-blur-md bg-background/80">
+      <div className="max-w-2xl mx-auto flex items-center justify-between px-4 py-3">
+        <Link href="/">
+          <span
+            className={`font-[family-name:var(--font-geist-sans)] font-semibold text-lg ${
+              left === "none" ? "text-white" : "text-muted-foreground"
+            }`}
+          >
+            Shareplay
+          </span>
+        </Link>
 
-      {right === "profile" && !loading && (
-        <div>
-          {isLoggedIn && profile ? (
-            <DropdownMenu>
-              <DropdownMenuTrigger className="flex items-center gap-2 outline-none cursor-pointer">
-                {profile.avatar_url ? (
-                  <img
-                    src={profile.avatar_url}
-                    alt={profile.handle}
-                    className="w-8 h-8 rounded-full object-cover"
-                  />
-                ) : (
-                  <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-xs font-medium">
-                    {profile.handle?.charAt(0)?.toUpperCase() || "?"}
-                  </div>
-                )}
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuGroup>
-                  <DropdownMenuLabel>{profile.handle}</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    onClick={() => router.push(`/u/${profile.handle}`)}
-                  >
-                    My Shareplay
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => router.push("/my")}>
-                    My Profile
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    onClick={handleLogout}
-                    className="text-muted-foreground"
-                  >
-                    Logout
-                  </DropdownMenuItem>
-                </DropdownMenuGroup>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          ) : (
-            <Link
-              href="/auth/login"
-              className="text-sm text-primary hover:underline"
-            >
-              Sign In
-            </Link>
-          )}
-        </div>
-      )}
+        {right === "profile" && !loading && (
+          <div>
+            {isLoggedIn && profile ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger className="flex items-center gap-2 outline-none cursor-pointer">
+                  {profile.avatar_url ? (
+                    <img
+                      src={profile.avatar_url}
+                      alt={profile.handle}
+                      className="w-8 h-8 rounded-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-xs font-medium">
+                      {profile.handle?.charAt(0)?.toUpperCase() || "?"}
+                    </div>
+                  )}
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuGroup>
+                    <DropdownMenuLabel>{profile.handle}</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      onClick={() => router.push(`/u/${profile.handle}`)}
+                    >
+                      My Shareplay
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => router.push("/my")}>
+                      My Profile
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      onClick={handleLogout}
+                      className="text-muted-foreground"
+                    >
+                      Logout
+                    </DropdownMenuItem>
+                  </DropdownMenuGroup>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <Link
+                href="/auth/login"
+                className="text-sm text-primary hover:underline"
+              >
+                Sign In
+              </Link>
+            )}
+          </div>
+        )}
+      </div>
     </header>
   );
 }

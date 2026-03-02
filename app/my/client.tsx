@@ -184,7 +184,11 @@ function TrackList({
           }}
         >
           <animated.div {...swipeBind(i)} style={{ x, touchAction: "pan-y" }}>
-            <TrackListItem track={tracks[i]} dragHandleProps={handleBind(i)} />
+            <TrackListItem
+              track={tracks[i]}
+              dragHandleProps={handleBind(i)}
+              onDelete={() => onDelete(tracks[i].id)}
+            />
           </animated.div>
           <animated.div
             className="absolute right-0 top-0 bottom-0 flex items-center justify-center"
@@ -269,7 +273,7 @@ export function MyPageClient({
     <div className="min-h-dvh flex flex-col pt-[52px]">
       <Header left="muted" right="profile" />
 
-      <div className="px-4 pt-4">
+      <div className="max-w-2xl mx-auto w-full px-4 pt-4">
         <div className="flex items-start justify-between">
           <div>
             <h1 className="text-xl font-semibold text-foreground">
@@ -292,7 +296,7 @@ export function MyPageClient({
         </div>
       </div>
 
-      <div className="flex-1 mt-6">
+      <div className="flex-1 mt-6 max-w-2xl mx-auto w-full">
         <TrackList
           tracks={tracks}
           onDelete={handleDeleteTrack}
@@ -300,12 +304,27 @@ export function MyPageClient({
         />
 
         <div className="px-4 py-6">
-          <button
+          <Button
+            variant="outline"
+            className="w-full md:w-auto"
             onClick={() => router.push("/my/search")}
-            className="text-sm text-primary hover:underline"
           >
+            <svg
+              className="w-4 h-4 mr-2"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 4v16m8-8H4"
+              />
+            </svg>
             Find more
-          </button>
+          </Button>
         </div>
       </div>
 

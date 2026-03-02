@@ -149,13 +149,20 @@ export default function SearchPage() {
   }, []);
 
   return (
-    <div className="min-h-dvh flex flex-col pt-[52px]">
+    <div className="min-h-dvh flex flex-col pt-[52px] pb-24 md:pb-0">
       <Header left="muted" right="profile" />
 
-      <div className="px-4 pt-4 space-y-4">
-        <h1 className="text-xl font-semibold text-foreground">
-          Let&apos;s find something
-        </h1>
+      <div className="max-w-5xl mx-auto w-full px-4 pt-4 space-y-4">
+        <div className="flex items-center justify-between gap-4">
+          <h1 className="text-xl font-semibold text-foreground shrink-0">
+            Let&apos;s find something
+          </h1>
+          <div className="hidden md:flex items-center gap-2">
+            <Button size="sm" onClick={() => router.push("/my")}>
+              Done
+            </Button>
+          </div>
+        </div>
 
         <Input
           placeholder="Search for songs"
@@ -165,7 +172,7 @@ export default function SearchPage() {
         />
       </div>
 
-      <div className="flex-1 mt-4">
+      <div className="flex-1 mt-4 max-w-5xl mx-auto w-full">
         {loading && (
           <div className="flex justify-center py-8">
             <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
@@ -173,14 +180,18 @@ export default function SearchPage() {
         )}
 
         {!loading && results.length > 0 && (
-          <div className="divide-y divide-border">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
             {results.map((track) => (
-              <TrackListItem
+              <div
                 key={track.trackId}
-                track={track}
-                action={addedTrackIds.has(track.trackId) ? "added" : "add"}
-                onAdd={() => handleAdd(track)}
-              />
+                className="border-b border-border md:border-b-0 md:rounded-lg md:hover:bg-accent/50 transition-colors"
+              >
+                <TrackListItem
+                  track={track}
+                  action={addedTrackIds.has(track.trackId) ? "added" : "add"}
+                  onAdd={() => handleAdd(track)}
+                />
+              </div>
             ))}
           </div>
         )}
@@ -192,7 +203,8 @@ export default function SearchPage() {
         )}
       </div>
 
-      <div className="sticky bottom-0 bg-background/80 backdrop-blur-md border-t border-border px-4 py-4 space-y-2">
+      {/* Mobile-only fixed bottom overlay */}
+      <div className="fixed bottom-0 left-0 right-0 bg-background/80 backdrop-blur-md border-t border-border px-4 py-4 space-y-2 md:hidden">
         <Button className="w-full" onClick={() => router.push("/my")}>
           Done
         </Button>

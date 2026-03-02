@@ -6,6 +6,18 @@ import { Coverflow, type CoverData } from "@/components/coverflow";
 import { createClient } from "@/lib/supabase/client";
 import type { Profile, PlaylistTrack } from "@/lib/types";
 
+function useResponsiveSize(mobile: number, desktop: number, breakpoint = 768) {
+  const [size, setSize] = useState(mobile);
+  useEffect(() => {
+    const mql = window.matchMedia(`(min-width: ${breakpoint}px)`);
+    const update = () => setSize(mql.matches ? desktop : mobile);
+    update();
+    mql.addEventListener("change", update);
+    return () => mql.removeEventListener("change", update);
+  }, [mobile, desktop, breakpoint]);
+  return size;
+}
+
 function getHighResArtwork(url: string) {
   return url.replace("100x100", "600x600");
 }
@@ -22,6 +34,7 @@ export function ProfilePageClient({
   const [addedTracks, setAddedTracks] = useState<Set<number>>(new Set());
   const [isOwner, setIsOwner] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const coverSize = useResponsiveSize(200, 300);
 
   useEffect(() => {
     const supabase = createClient();
@@ -122,10 +135,10 @@ export function ProfilePageClient({
   };
 
   return (
-    <div className="min-h-dvh flex flex-col bg-black pt-[52px]">
+    <div className="h-dvh flex flex-col bg-black pt-[52px] overflow-hidden">
       <Header left="muted" right="profile" />
 
-      <div className="px-4 pt-4">
+      <div className="max-w-2xl mx-auto w-full px-4 pt-4">
         <div className="flex items-start justify-between">
           <div>
             <h1 className="text-xl font-semibold text-foreground">
@@ -154,69 +167,71 @@ export function ProfilePageClient({
             <div className="w-full relative">
               <Coverflow
                 covers={coverData}
-                size={200}
+                size={coverSize}
                 onChange={setCurrentIndex}
               />
             </div>
           </div>
 
           {/* Track info overlay */}
-          <div className="fixed bottom-0 left-0 right-0 px-6 pb-8 pt-4 space-y-4 bg-gradient-to-t from-black/90 via-black/60 to-transparent backdrop-blur-xs z-50">
-            <div className="text-center space-y-1">
-              <p className="text-lg font-semibold text-foreground">
-                {currentTrack?.track_name}
-              </p>
-              <p className="text-sm text-muted-foreground">
-                {currentTrack?.artist_name}
-              </p>
-            </div>
+          <div className="fixed bottom-0 left-0 right-0 z-50">
+            <div className="max-w-2xl mx-auto px-6 pb-8 pt-4 space-y-4 bg-gradient-to-t from-black/90 via-black/60 to-transparent backdrop-blur-xs">
+              <div className="text-center space-y-1">
+                <p className="text-lg font-semibold text-foreground">
+                  {currentTrack?.track_name}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  {currentTrack?.artist_name}
+                </p>
+              </div>
 
-            <div className="flex flex-col items-center gap-3">
-              {currentTrack?.preview_url && (
+              <div className="flex flex-col items-center gap-3">
+                {currentTrack?.preview_url && (
+                  <button
+                    onClick={togglePlay}
+                    className="w-12 h-12 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center hover:bg-white/20 transition-colors"
+                  >
+                    {isPlaying ? (
+                      <svg
+                        className="w-5 h-5 text-white"
+                        fill="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <rect x="6" y="4" width="4" height="16" />
+                        <rect x="14" y="4" width="4" height="16" />
+                      </svg>
+                    ) : (
+                      <svg
+                        className="w-5 h-5 text-white ml-0.5"
+                        fill="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <polygon points="5,3 19,12 5,21" />
+                      </svg>
+                    )}
+                  </button>
+                )}
+
                 <button
-                  onClick={togglePlay}
-                  className="w-12 h-12 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center hover:bg-white/20 transition-colors"
+                  onClick={handleAddToMyShareplay}
+                  className="text-sm text-primary hover:underline"
                 >
-                  {isPlaying ? (
-                    <svg
-                      className="w-5 h-5 text-white"
-                      fill="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <rect x="6" y="4" width="4" height="16" />
-                      <rect x="14" y="4" width="4" height="16" />
-                    </svg>
-                  ) : (
-                    <svg
-                      className="w-5 h-5 text-white ml-0.5"
-                      fill="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <polygon points="5,3 19,12 5,21" />
-                    </svg>
-                  )}
+                  {addedTracks.has(currentTrack?.track_id)
+                    ? "Added to Shareplay"
+                    : "Add to my Shareplay"}
                 </button>
-              )}
 
-              <button
-                onClick={handleAddToMyShareplay}
-                className="text-sm text-primary hover:underline"
-              >
-                {addedTracks.has(currentTrack?.track_id)
-                  ? "Added to Shareplay"
-                  : "Add to my Shareplay"}
-              </button>
-
-              {currentTrack?.track_view_url && (
-                <a
-                  href={currentTrack.track_view_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-sm text-muted-foreground hover:underline"
-                >
-                  Play on Apple Music
-                </a>
-              )}
+                {currentTrack?.track_view_url && (
+                  <a
+                    href={currentTrack.track_view_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm text-muted-foreground hover:underline"
+                  >
+                    Play on Apple Music
+                  </a>
+                )}
+              </div>
             </div>
           </div>
         </>

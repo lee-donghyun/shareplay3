@@ -6,6 +6,7 @@ interface TrackListItemProps {
   track: PlaylistTrack | ITunesTrack;
   action?: "add" | "added" | "none";
   onAdd?: () => void;
+  onDelete?: () => void;
   dragHandleProps?: React.HTMLAttributes<HTMLDivElement>;
 }
 
@@ -19,6 +20,7 @@ export function TrackListItem({
   track,
   action = "none",
   onAdd,
+  onDelete,
   dragHandleProps,
 }: TrackListItemProps) {
   const artworkUrl = isITunesTrack(track)
@@ -30,7 +32,7 @@ export function TrackListItem({
     : track.artist_name;
 
   return (
-    <div className="flex items-center gap-3 py-3 px-4">
+    <div className="group flex items-center gap-3 py-3 px-4">
       {dragHandleProps && (
         <div
           {...dragHandleProps}
@@ -73,6 +75,15 @@ export function TrackListItem({
       )}
       {action === "added" && (
         <span className="text-sm text-muted-foreground shrink-0">Added</span>
+      )}
+      {onDelete && (
+        <button
+          onClick={onDelete}
+          className="hidden md:block text-sm text-destructive font-medium shrink-0 opacity-0 group-hover:opacity-100 transition-opacity hover:underline"
+          aria-label={`Delete ${trackName}`}
+        >
+          Delete
+        </button>
       )}
     </div>
   );
