@@ -104,7 +104,7 @@ export function Header({ left = "muted", right = "none" }: HeaderProps) {
 
         {/* Reserve a fixed 8×8 (32px) box so the header never shifts */}
         {right === "profile" && (
-          <div className="w-8 h-8 flex items-center justify-center">
+          <div className="h-8 flex items-center justify-center">
             {!loading &&
               (isLoggedIn && profile ? (
                 <DropdownMenu>
