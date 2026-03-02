@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/client";
 import { Header } from "@/components/header";
+import Link from "next/link";
 
 export default function LoginPage() {
   const handleGoogleLogin = async () => {
@@ -54,8 +55,21 @@ export default function LoginPage() {
             </button>
 
             <p className="text-xs text-center text-muted-foreground">
-              By clicking continue, you agree to our Terms of Service and
-              Privacy Policy.
+              By clicking continue, you agree to our{" "}
+              <Link
+                href="/l/terms"
+                className="underline hover:text-foreground transition-colors"
+              >
+                Terms of Service
+              </Link>{" "}
+              and{" "}
+              <Link
+                href="/l/privacy"
+                className="underline hover:text-foreground transition-colors"
+              >
+                Privacy Policy
+              </Link>
+              .
             </p>
           </div>
         </div>
