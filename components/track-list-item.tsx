@@ -1,5 +1,6 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
 import type { PlaylistTrack, ITunesTrack } from "@/lib/types";
 
 interface TrackListItemProps {
@@ -66,24 +67,23 @@ export function TrackListItem({
         <p className="text-xs text-muted-foreground truncate">{artistName}</p>
       </div>
       {action === "add" && (
-        <button
-          onClick={onAdd}
-          className="text-sm text-primary font-medium shrink-0 hover:underline"
-        >
+        <Button variant="link" size="sm" onClick={onAdd} className="shrink-0">
           Add
-        </button>
+        </Button>
       )}
       {action === "added" && (
         <span className="text-sm text-muted-foreground shrink-0">Added</span>
       )}
       {onDelete && (
-        <button
+        <Button
+          variant="link"
+          size="sm"
           onClick={onDelete}
-          className="hidden md:block text-sm text-destructive font-medium shrink-0 opacity-0 group-hover:opacity-100 transition-opacity hover:underline"
+          className="hidden md:block shrink-0 text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
           aria-label={`Delete ${trackName}`}
         >
           Delete
-        </button>
+        </Button>
       )}
     </div>
   );

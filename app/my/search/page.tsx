@@ -207,16 +207,10 @@ export default function SearchPage() {
       </div>
 
       {/* Mobile-only fixed bottom overlay */}
-      <div className="fixed bottom-0 left-0 right-0 bg-background/80 backdrop-blur-md border-t border-border px-4 py-4 space-y-2 md:hidden">
+      <div className="fixed bottom-0 left-0 right-0 bg-background/80 backdrop-blur-md border-t border-border px-4 py-4 space-y-2 md:hidden pb-12">
         <Button className="w-full" onClick={() => router.push("/my")}>
           Done
         </Button>
-        <button
-          onClick={() => router.push("/my")}
-          className="w-full text-sm text-muted-foreground text-center py-2 hover:underline"
-        >
-          Back
-        </button>
       </div>
     </div>
   );

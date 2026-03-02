@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { Header } from "@/components/header";
+import { Button } from "@/components/ui/button";
 import type { CoverData } from "@/components/coverflow";
 import { createClient } from "@/lib/supabase/client";
 import type { Profile, PlaylistTrack } from "@/lib/types";
@@ -159,12 +160,9 @@ export function ProfilePageClient({
             ) : null}
           </div>
           {isOwner && (
-            <button
-              onClick={handleShare}
-              className="text-sm text-primary hover:underline"
-            >
+            <Button variant="link" onClick={handleShare}>
               Share
-            </button>
+            </Button>
           )}
         </div>
       </div>
@@ -195,9 +193,11 @@ export function ProfilePageClient({
 
               <div className="flex flex-col items-center gap-3">
                 {currentTrack?.preview_url ? (
-                  <button
+                  <Button
+                    variant="ghost"
+                    size="icon"
                     onClick={togglePlay}
-                    className="w-12 h-12 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center hover:bg-white/20 transition-colors"
+                    className="w-12 h-12 rounded-full bg-white/10 backdrop-blur-sm hover:bg-white/20"
                   >
                     {isPlaying ? (
                       <svg
@@ -217,17 +217,14 @@ export function ProfilePageClient({
                         <polygon points="5,3 19,12 5,21" />
                       </svg>
                     )}
-                  </button>
+                  </Button>
                 ) : null}
 
-                <button
-                  onClick={handleAddToMyShareplay}
-                  className="text-sm text-primary hover:underline"
-                >
+                <Button variant="link" onClick={handleAddToMyShareplay}>
                   {addedTracks.has(currentTrack?.track_id)
                     ? "Added to Shareplay"
                     : "Add to my Shareplay"}
-                </button>
+                </Button>
 
                 {currentTrack?.track_view_url ? (
                   <a

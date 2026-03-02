@@ -313,12 +313,9 @@ export function MyPageClient({
             ) : null}
           </div>
           <div className="flex gap-2">
-            <button
-              onClick={() => setEditModalOpen(true)}
-              className="text-sm text-primary hover:underline"
-            >
+            <Button variant="link" onClick={() => setEditModalOpen(true)}>
               Edit Profile
-            </button>
+            </Button>
           </div>
         </div>
       </div>

@@ -1,5 +1,7 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
+
 export default function Error({
   reset,
 }: {
@@ -11,12 +13,9 @@ export default function Error({
       <div className="text-center space-y-4">
         <h1 className="text-4xl font-semibold text-foreground">Error</h1>
         <p className="text-muted-foreground">Something went wrong.</p>
-        <button
-          onClick={reset}
-          className="inline-block text-sm text-primary hover:underline"
-        >
+        <Button variant="link" onClick={reset}>
           Try again
-        </button>
+        </Button>
       </div>
     </div>
   );

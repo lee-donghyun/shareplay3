@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/client";
 import { Header } from "@/components/header";
+import { Button } from "@/components/ui/button";
 import Link from "next/link";
 
 export default function LoginPage() {
@@ -29,9 +30,10 @@ export default function LoginPage() {
           </div>
 
           <div className="space-y-4">
-            <button
+            <Button
+              variant="outline"
               onClick={handleGoogleLogin}
-              className="w-full flex items-center justify-center gap-3 rounded-lg border border-border bg-card px-4 py-3 text-sm font-medium text-foreground hover:bg-accent transition-colors"
+              className="w-full h-auto gap-3 rounded-lg px-4 py-3"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24">
                 <path
@@ -52,7 +54,7 @@ export default function LoginPage() {
                 />
               </svg>
               Continue with Google
-            </button>
+            </Button>
 
             <p className="text-xs text-center text-muted-foreground">
               By clicking continue, you agree to our{" "}
