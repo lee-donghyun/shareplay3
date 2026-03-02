@@ -1,10 +1,17 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import dynamic from "next/dynamic";
 import { Header } from "@/components/header";
-import { Coverflow, type CoverData } from "@/components/coverflow";
+import type { CoverData } from "@/components/coverflow";
 import { createClient } from "@/lib/supabase/client";
 import type { Profile, PlaylistTrack } from "@/lib/types";
+
+// bundle-dynamic-imports: Coverflow pulls in @react-spring/web + @use-gesture/react (~40kB)
+const Coverflow = dynamic(
+  () => import("@/components/coverflow").then((m) => m.Coverflow),
+  { ssr: false },
+);
 
 function useResponsiveSize(mobile: number, desktop: number, breakpoint = 768) {
   const [size, setSize] = useState(mobile);
@@ -76,14 +83,15 @@ export function ProfilePageClient({
     audio.onended = () => setIsPlaying(false);
   }, [currentTrack, isPlaying]);
 
-  useEffect(() => {
-    // Stop audio when changing track
+  // rerender-move-effect-to-event: stop audio in the change handler, not an effect
+  const handleCoverChange = useCallback((index: number) => {
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current = null;
       setIsPlaying(false);
     }
-  }, [currentIndex]);
+    setCurrentIndex(index);
+  }, []);
 
   const handleShare = async () => {
     if (navigator.share) {
@@ -144,11 +152,11 @@ export function ProfilePageClient({
             <h1 className="text-xl font-semibold text-foreground">
               {profile.handle}
             </h1>
-            {profile.message && (
+            {profile.message ? (
               <p className="text-sm text-muted-foreground mt-1">
                 {profile.message}
               </p>
-            )}
+            ) : null}
           </div>
           {isOwner && (
             <button
@@ -168,14 +176,14 @@ export function ProfilePageClient({
               <Coverflow
                 covers={coverData}
                 size={coverSize}
-                onChange={setCurrentIndex}
+                onChange={handleCoverChange}
               />
             </div>
           </div>
 
           {/* Track info overlay */}
           <div className="fixed bottom-0 left-0 right-0 z-50">
-            <div className="max-w-2xl mx-auto px-6 pb-8 pt-4 space-y-4 bg-gradient-to-t from-black/90 via-black/60 to-transparent backdrop-blur-xs">
+            <div className="max-w-2xl mx-auto px-6 pb-8 pt-4 space-y-4 bg-gradient-to-t from-black/90 via-black/60 to-transparent backdrop-blur-xs rounded-4xl">
               <div className="text-center space-y-1">
                 <p className="text-lg font-semibold text-foreground">
                   {currentTrack?.track_name}
@@ -186,7 +194,7 @@ export function ProfilePageClient({
               </div>
 
               <div className="flex flex-col items-center gap-3">
-                {currentTrack?.preview_url && (
+                {currentTrack?.preview_url ? (
                   <button
                     onClick={togglePlay}
                     className="w-12 h-12 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center hover:bg-white/20 transition-colors"
@@ -210,7 +218,7 @@ export function ProfilePageClient({
                       </svg>
                     )}
                   </button>
-                )}
+                ) : null}
 
                 <button
                   onClick={handleAddToMyShareplay}
@@ -221,7 +229,7 @@ export function ProfilePageClient({
                     : "Add to my Shareplay"}
                 </button>
 
-                {currentTrack?.track_view_url && (
+                {currentTrack?.track_view_url ? (
                   <a
                     href={currentTrack.track_view_url}
                     target="_blank"
@@ -230,7 +238,7 @@ export function ProfilePageClient({
                   >
                     Play on Apple Music
                   </a>
-                )}
+                ) : null}
               </div>
             </div>
           </div>

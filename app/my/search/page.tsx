@@ -15,6 +15,11 @@ export default function SearchPage() {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<ITunesTrack[]>([]);
   const [addedTrackIds, setAddedTrackIds] = useState<Set<number>>(new Set());
+  // rerender-functional-setstate: ref mirrors state so handleAdd stays stable
+  const addedTrackIdsRef = useRef(addedTrackIds);
+  useEffect(() => {
+    addedTrackIdsRef.current = addedTrackIds;
+  }, [addedTrackIds]);
   const [loading, setLoading] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(null);
   const undoTimeoutRefs = useRef<Map<number, ReturnType<typeof setTimeout>>>(
@@ -75,76 +80,74 @@ export default function SearchPage() {
     };
   }, [query]);
 
-  const handleAdd = useCallback(
-    async (track: ITunesTrack) => {
-      if (addedTrackIds.has(track.trackId)) return;
+  const handleAdd = useCallback(async (track: ITunesTrack) => {
+    if (addedTrackIdsRef.current.has(track.trackId)) return;
 
-      const supabase = createClient();
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+    const supabase = createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
-      if (!user) return;
+    if (!user) return;
 
-      // Get next position
-      const { data: existingTracks } = await supabase
-        .from("playlist_tracks")
-        .select("position")
-        .eq("user_id", user.id)
-        .order("position", { ascending: false })
-        .limit(1);
+    // Get next position
+    const { data: existingTracks } = await supabase
+      .from("playlist_tracks")
+      .select("position")
+      .eq("user_id", user.id)
+      .order("position", { ascending: false })
+      .limit(1);
 
-      const nextPosition =
-        existingTracks && existingTracks.length > 0
-          ? existingTracks[0].position + 1
-          : 0;
+    const nextPosition =
+      existingTracks && existingTracks.length > 0
+        ? existingTracks[0].position + 1
+        : 0;
 
-      const { data: inserted } = await supabase
-        .from("playlist_tracks")
-        .insert({
-          user_id: user.id,
-          track_id: track.trackId,
-          track_name: track.trackName,
-          artist_name: track.artistName,
-          collection_name: track.collectionName,
-          artwork_url: track.artworkUrl100,
-          preview_url: track.previewUrl,
-          track_view_url: track.trackViewUrl,
-          position: nextPosition,
-        })
-        .select("id")
-        .single();
+    const { data: inserted } = await supabase
+      .from("playlist_tracks")
+      .insert({
+        user_id: user.id,
+        track_id: track.trackId,
+        track_name: track.trackName,
+        artist_name: track.artistName,
+        collection_name: track.collectionName,
+        artwork_url: track.artworkUrl100,
+        preview_url: track.previewUrl,
+        track_view_url: track.trackViewUrl,
+        position: nextPosition,
+      })
+      .select("id")
+      .single();
 
-      setAddedTrackIds((prev) => new Set(prev).add(track.trackId));
+    setAddedTrackIds((prev) => new Set(prev).add(track.trackId));
 
-      // Undo toast
-      toast(`Added "${track.trackName}"`, {
-        action: {
-          label: "Undo",
-          onClick: async () => {
-            if (inserted) {
-              await supabase
-                .from("playlist_tracks")
-                .delete()
-                .eq("id", inserted.id);
-              setAddedTrackIds((prev) => {
-                const next = new Set(prev);
-                next.delete(track.trackId);
-                return next;
-              });
-            }
-          },
+    // Undo toast
+    toast(`Added "${track.trackName}"`, {
+      action: {
+        label: "Undo",
+        onClick: async () => {
+          if (inserted) {
+            await supabase
+              .from("playlist_tracks")
+              .delete()
+              .eq("id", inserted.id);
+            setAddedTrackIds((prev) => {
+              const next = new Set(prev);
+              next.delete(track.trackId);
+              return next;
+            });
+          }
         },
-        duration: 5000,
-      });
-    },
-    [addedTrackIds],
-  );
+      },
+      duration: 5000,
+    });
+  }, []);
 
   // Cleanup undo timeouts
   useEffect(() => {
+    const refs = undoTimeoutRefs.current;
     return () => {
-      undoTimeoutRefs.current.forEach((timeout) => clearTimeout(timeout));
+      refs.forEach((timeout) => clearTimeout(timeout));
     };
   }, []);
 

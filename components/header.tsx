@@ -15,6 +15,18 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 
+// Module-level cache – persists across client-side navigations
+let profileCache: {
+  profile: Profile | null;
+  isLoggedIn: boolean;
+  loaded: boolean;
+} | null = null;
+
+/** Clear the cached profile (call after logout or profile update). */
+export function invalidateProfileCache() {
+  profileCache = null;
+}
+
 interface HeaderProps {
   left?: "none" | "muted";
   right?: "none" | "profile";
@@ -22,34 +34,57 @@ interface HeaderProps {
 
 export function Header({ left = "muted", right = "none" }: HeaderProps) {
   const router = useRouter();
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [loading, setLoading] = useState(true);
+
+  // Initialise from cache when available so the first render is instant
+  const [profile, setProfile] = useState<Profile | null>(
+    profileCache?.profile ?? null,
+  );
+  const [isLoggedIn, setIsLoggedIn] = useState(
+    profileCache?.isLoggedIn ?? false,
+  );
+  const [loading, setLoading] = useState(
+    right === "profile" ? !profileCache?.loaded : false,
+  );
+  const [animate, setAnimate] = useState(false);
 
   useEffect(() => {
-    if (right !== "profile") {
-      setLoading(false);
-      return;
-    }
+    if (right !== "profile") return;
+
+    // If we already have a cached result, skip the fetch
+    if (profileCache?.loaded) return;
 
     const supabase = createClient();
     supabase.auth.getUser().then(async ({ data: { user } }) => {
+      let fetchedProfile: Profile | null = null;
+      const loggedIn = !!user;
+
       if (user) {
-        setIsLoggedIn(true);
         const { data } = await supabase
           .from("profiles")
           .select("*")
           .eq("id", user.id)
           .single();
-        if (data) setProfile(data);
+        if (data) fetchedProfile = data;
       }
+
+      // Persist to module-level cache
+      profileCache = {
+        profile: fetchedProfile,
+        isLoggedIn: loggedIn,
+        loaded: true,
+      };
+
+      setProfile(fetchedProfile);
+      setIsLoggedIn(loggedIn);
       setLoading(false);
+      setAnimate(true);
     });
   }, [right]);
 
   const handleLogout = async () => {
     const supabase = createClient();
     await supabase.auth.signOut();
+    invalidateProfileCache();
     router.push("/");
     router.refresh();
   };
@@ -67,53 +102,63 @@ export function Header({ left = "muted", right = "none" }: HeaderProps) {
           </span>
         </Link>
 
-        {right === "profile" && !loading && (
-          <div>
-            {isLoggedIn && profile ? (
-              <DropdownMenu>
-                <DropdownMenuTrigger className="flex items-center gap-2 outline-none cursor-pointer">
-                  {profile.avatar_url ? (
-                    <img
-                      src={profile.avatar_url}
-                      alt={profile.handle}
-                      className="w-8 h-8 rounded-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-xs font-medium">
-                      {profile.handle?.charAt(0)?.toUpperCase() || "?"}
-                    </div>
-                  )}
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuGroup>
-                    <DropdownMenuLabel>{profile.handle}</DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                      onClick={() => router.push(`/u/${profile.handle}`)}
-                    >
-                      My Shareplay
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => router.push("/my")}>
-                      My Profile
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                      onClick={handleLogout}
-                      className="text-muted-foreground"
-                    >
-                      Logout
-                    </DropdownMenuItem>
-                  </DropdownMenuGroup>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            ) : (
-              <Link
-                href="/auth/login"
-                className="text-sm text-primary hover:underline"
-              >
-                Sign In
-              </Link>
-            )}
+        {/* Reserve a fixed 8×8 (32px) box so the header never shifts */}
+        {right === "profile" && (
+          <div className="w-8 h-8 flex items-center justify-center">
+            {!loading &&
+              (isLoggedIn && profile ? (
+                <DropdownMenu>
+                  <DropdownMenuTrigger
+                    className={`flex items-center gap-2 outline-none cursor-pointer ${
+                      animate
+                        ? "animate-in fade-in zoom-in-75 duration-300"
+                        : ""
+                    }`}
+                  >
+                    {profile.avatar_url ? (
+                      <img
+                        src={profile.avatar_url}
+                        alt={profile.handle}
+                        className="w-8 h-8 rounded-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-xs font-medium">
+                        {profile.handle?.charAt(0)?.toUpperCase() || "?"}
+                      </div>
+                    )}
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuGroup>
+                      <DropdownMenuLabel>{profile.handle}</DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        onClick={() => router.push(`/u/${profile.handle}`)}
+                      >
+                        My Shareplay
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => router.push("/my")}>
+                        My Profile
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        onClick={handleLogout}
+                        className="text-muted-foreground"
+                      >
+                        Logout
+                      </DropdownMenuItem>
+                    </DropdownMenuGroup>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              ) : (
+                <Link
+                  href="/auth/login"
+                  className={`text-sm text-primary hover:underline ${
+                    animate ? "animate-in fade-in duration-300" : ""
+                  }`}
+                >
+                  Sign In
+                </Link>
+              ))}
           </div>
         )}
       </div>

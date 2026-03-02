@@ -4,7 +4,7 @@ import { useCallback, useLayoutEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useDrag } from "@use-gesture/react";
 import { animated, useSprings } from "@react-spring/web";
-import { Header } from "@/components/header";
+import { Header, invalidateProfileCache } from "@/components/header";
 import { TrackListItem } from "@/components/track-list-item";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -243,6 +243,7 @@ export function MyPageClient({
 
     if (!error) {
       setProfile({ ...profile, handle: editHandle, message: editMessage });
+      invalidateProfileCache();
       setEditModalOpen(false);
     }
     setSaving(false);
@@ -279,11 +280,11 @@ export function MyPageClient({
             <h1 className="text-xl font-semibold text-foreground">
               {profile.handle}
             </h1>
-            {profile.message && (
+            {profile.message ? (
               <p className="text-sm text-muted-foreground mt-1">
                 {profile.message}
               </p>
-            )}
+            ) : null}
           </div>
           <div className="flex gap-2">
             <button

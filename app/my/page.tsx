@@ -12,21 +12,26 @@ export default async function MyPage() {
     redirect("/auth/login");
   }
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("id", user.id)
-    .single();
+  // async-parallel: profile and tracks are independent queries — fetch in parallel
+  // server-serialization: select only fields the client component uses
+  const [{ data: profile }, { data: tracks }] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select("id, handle, message, avatar_url")
+      .eq("id", user.id)
+      .single(),
+    supabase
+      .from("playlist_tracks")
+      .select(
+        "id, user_id, track_id, track_name, artist_name, collection_name, artwork_url, preview_url, track_view_url, position",
+      )
+      .eq("user_id", user.id)
+      .order("position", { ascending: true }),
+  ]);
 
   if (!profile) {
     redirect("/auth/onboarding");
   }
-
-  const { data: tracks } = await supabase
-    .from("playlist_tracks")
-    .select("*")
-    .eq("user_id", user.id)
-    .order("position", { ascending: true });
 
   return <MyPageClient profile={profile} initialTracks={tracks ?? []} />;
 }

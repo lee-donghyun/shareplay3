@@ -3,13 +3,13 @@ export interface Profile {
   handle: string;
   message: string;
   avatar_url: string | null;
-  created_at: string;
-  updated_at: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface PlaylistTrack {
   id: string;
-  user_id: string;
+  user_id?: string;
   track_id: number;
   track_name: string;
   artist_name: string;
@@ -18,7 +18,7 @@ export interface PlaylistTrack {
   preview_url: string | null;
   track_view_url: string | null;
   position: number;
-  created_at: string;
+  created_at?: string;
 }
 
 export interface ITunesTrack {
