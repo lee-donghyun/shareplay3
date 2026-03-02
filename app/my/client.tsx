@@ -10,6 +10,13 @@ import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import type { Profile, PlaylistTrack } from "@/lib/types";
 
 const SWIPE_THRESHOLD = 50;
@@ -117,7 +124,20 @@ function TrackList({
     },
   );
 
-  // X-axis swipe for delete (item body)
+  // Detect md+ screens to disable swipe
+  const [isMd, setIsMd] = useState(() =>
+    typeof window !== "undefined"
+      ? window.matchMedia("(min-width: 768px)").matches
+      : false,
+  );
+  useLayoutEffect(() => {
+    const mql = window.matchMedia("(min-width: 768px)");
+    const handler = (e: MediaQueryListEvent) => setIsMd(e.matches);
+    mql.addEventListener("change", handler);
+    return () => mql.removeEventListener("change", handler);
+  }, []);
+
+  // X-axis swipe for delete (item body) — disabled on md+
   const swipeBind = useDrag(
     ({
       args: [originalIndex],
@@ -127,6 +147,11 @@ function TrackList({
       direction: [dx],
       cancel,
     }) => {
+      if (isMd) {
+        cancel();
+        return;
+      }
+
       const idx = originalIndex as number;
       const isSwiped = swipedState.current[idx];
       const effectiveX = isSwiped ? -DELETE_BUTTON_WIDTH + mx : mx;
@@ -162,6 +187,7 @@ function TrackList({
     {
       axis: "x",
       filterTaps: true,
+      enabled: !isMd,
     },
   );
 
@@ -329,14 +355,23 @@ export function MyPageClient({
         </div>
       </div>
 
-      {/* Edit Profile Modal */}
-      {editModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
-          <div className="w-full max-w-sm mx-4 bg-card rounded-xl p-6 space-y-4">
-            <h2 className="text-lg font-semibold text-foreground">
-              Edit Profile
-            </h2>
+      {/* Edit Profile Dialog */}
+      <Dialog
+        open={editModalOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            setEditHandle(profile.handle);
+            setEditMessage(profile.message);
+          }
+          setEditModalOpen(open);
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Profile</DialogTitle>
+          </DialogHeader>
 
+          <div className="space-y-4">
             <div className="space-y-2">
               <label className="text-sm font-medium text-foreground">
                 Handle
@@ -357,25 +392,25 @@ export function MyPageClient({
                 rows={3}
               />
             </div>
-
-            <div className="flex gap-2 justify-end">
-              <Button
-                variant="ghost"
-                onClick={() => {
-                  setEditHandle(profile.handle);
-                  setEditMessage(profile.message);
-                  setEditModalOpen(false);
-                }}
-              >
-                Cancel
-              </Button>
-              <Button onClick={handleEditProfile} disabled={saving}>
-                {saving ? "Saving..." : "Save"}
-              </Button>
-            </div>
           </div>
-        </div>
-      )}
+
+          <DialogFooter>
+            <Button
+              variant="ghost"
+              onClick={() => {
+                setEditHandle(profile.handle);
+                setEditMessage(profile.message);
+                setEditModalOpen(false);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleEditProfile} disabled={saving}>
+              {saving ? "Saving..." : "Save"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
