@@ -68,6 +68,22 @@ export default async function Home() {
               시작하기
             </Button>
           </Link>
+
+          <p className="text-xs text-muted-foreground mt-8">
+            <Link
+              href="/privacy"
+              className="underline hover:text-foreground transition-colors"
+            >
+              개인정보처리방침
+            </Link>
+            {" · "}
+            <Link
+              href="/terms"
+              className="underline hover:text-foreground transition-colors"
+            >
+              서비스 약관
+            </Link>
+          </p>
         </div>
       </div>
     </div>
