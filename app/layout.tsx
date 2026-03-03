@@ -15,10 +15,12 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-export const metadata: Metadata | object = {
+export const metadata: Metadata = {
   title: "Shareplay",
   description: "Share your playlist with the world",
-  ["google-site-verification"]: "SlaIdfQ1Mb75JUq7z0mlUKKo8OGFTxS2v9lMsYEW24k",
+  verification: {
+    google: "SlaIdfQ1Mb75JUq7z0mlUKKo8OGFTxS2v9lMsYEW24k",
+  },
 };
 
 export default function RootLayout({
