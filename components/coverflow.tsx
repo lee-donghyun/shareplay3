@@ -173,7 +173,7 @@ export function Coverflow({
     <div
       className="overflow-hidden touch-none"
       style={{
-        padding: `${size}px calc(50% - ${size / 2}px) ${size}px calc(50% - ${
+        padding: `${size * 0.3}px calc(50% - ${size / 2}px) ${size}px calc(50% - ${
           size / 2
         }px)`,
       }}

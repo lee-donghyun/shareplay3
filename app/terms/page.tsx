@@ -9,80 +9,86 @@ export default function TermsOfServicePage() {
         <div className="space-y-6">
           <div className="space-y-2">
             <h1 className="text-2xl font-semibold text-foreground">
-              서비스 약관
+              Terms of Service
             </h1>
             <p className="text-sm text-muted-foreground">
-              최종 수정일: 2026년 3월 2일
+              Last updated: March 2, 2026
             </p>
           </div>
 
           <div className="space-y-4 text-sm text-muted-foreground leading-relaxed">
             <section className="space-y-2">
               <h2 className="text-base font-medium text-foreground">
-                1. 서비스 개요
+                1. Service Overview
               </h2>
               <p>
-                Shareplay는 사용자가 자신의 음악 플레이리스트를 구성하고 다른
-                사람과 공유할 수 있는 웹 서비스입니다.
+                Shareplay is a web service that allows users to build their own
+                music playlists and share them with others.
               </p>
             </section>
 
             <section className="space-y-2">
               <h2 className="text-base font-medium text-foreground">
-                2. 이용 자격
+                2. Eligibility
               </h2>
               <p>
-                본 서비스는 Google 계정을 보유한 사용자라면 누구나 이용할 수
-                있습니다.
+                Anyone with a Google account is eligible to use this service.
               </p>
             </section>
 
             <section className="space-y-2">
               <h2 className="text-base font-medium text-foreground">
-                3. 사용자의 의무
+                3. User Obligations
               </h2>
               <ul className="list-disc pl-5 space-y-1">
-                <li>타인의 권리를 침해하는 콘텐츠를 게시하지 않아야 합니다.</li>
-                <li>서비스의 정상적인 운영을 방해하지 않아야 합니다.</li>
                 <li>
-                  부정확한 정보를 제공하거나 타인을 사칭하지 않아야 합니다.
+                  Users must not post content that infringes on the rights of
+                  others.
+                </li>
+                <li>
+                  Users must not interfere with the normal operation of the
+                  service.
+                </li>
+                <li>
+                  Users must not provide false information or impersonate
+                  others.
                 </li>
               </ul>
             </section>
 
             <section className="space-y-2">
               <h2 className="text-base font-medium text-foreground">
-                4. 서비스 이용 제한
+                4. Service Restrictions
               </h2>
               <p>
-                Shareplay는 다음의 경우 사전 통보 없이 서비스 이용을 제한할 수
-                있습니다:
+                Shareplay may restrict access to the service without prior
+                notice in the following cases:
               </p>
               <ul className="list-disc pl-5 space-y-1">
-                <li>본 약관을 위반한 경우</li>
-                <li>서비스 운영을 방해한 경우</li>
-                <li>법령에 위반되는 행위를 한 경우</li>
+                <li>Violation of these terms</li>
+                <li>Interference with service operations</li>
+                <li>Actions that violate applicable laws</li>
               </ul>
             </section>
 
             <section className="space-y-2">
               <h2 className="text-base font-medium text-foreground">
-                5. 면책 조항
+                5. Disclaimer
               </h2>
               <p>
-                Shareplay는 사용자가 공유한 플레이리스트의 콘텐츠에 대해
-                책임지지 않습니다. 음악 정보는 Apple iTunes Search API를 통해
-                제공되며, 정보의 정확성은 해당 서비스에 의존합니다.
+                Shareplay is not responsible for the content of playlists shared
+                by users. Music information is provided through the Apple iTunes
+                Search API, and its accuracy depends on that service.
               </p>
             </section>
 
             <section className="space-y-2">
               <h2 className="text-base font-medium text-foreground">
-                6. 약관의 변경
+                6. Changes to Terms
               </h2>
               <p>
-                본 약관은 서비스 운영상 필요한 경우 변경될 수 있으며, 변경 시
-                서비스 내 공지를 통해 안내합니다.
+                These terms may be updated as needed for service operations. Any
+                changes will be announced through in-app notifications.
               </p>
             </section>
           </div>

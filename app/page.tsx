@@ -36,9 +36,9 @@ export default async function Home() {
               Shareplay
             </h1>
             <p className="text-lg text-muted-foreground">
-              나만의 플레이리스트를 만들고,
+              Create your own playlist
               <br />
-              친구들과 공유하세요.
+              and share it with friends.
             </p>
           </div>
 
@@ -47,25 +47,25 @@ export default async function Home() {
               <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-muted text-foreground text-sm font-medium">
                 1
               </span>
-              <span>좋아하는 곡을 검색하고 추가하세요</span>
+              <span>Search and add your favorite songs</span>
             </div>
             <div className="flex items-center gap-3 justify-center">
               <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-muted text-foreground text-sm font-medium">
                 2
               </span>
-              <span>커버플로우로 플레이리스트를 감상하세요</span>
+              <span>Browse your playlist in coverflow</span>
             </div>
             <div className="flex items-center gap-3 justify-center">
               <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-muted text-foreground text-sm font-medium">
                 3
               </span>
-              <span>링크 하나로 누구에게나 공유하세요</span>
+              <span>Share with anyone via a single link</span>
             </div>
           </div>
 
           <Link href="/auth/login">
             <Button size="lg" className="w-full rounded-lg">
-              시작하기
+              Get Started
             </Button>
           </Link>
 
@@ -74,14 +74,14 @@ export default async function Home() {
               href="/privacy"
               className="underline hover:text-foreground transition-colors"
             >
-              개인정보처리방침
+              Privacy Policy
             </Link>
             {" · "}
             <Link
               href="/terms"
               className="underline hover:text-foreground transition-colors"
             >
-              서비스 약관
+              Terms of Service
             </Link>
           </p>
         </div>
