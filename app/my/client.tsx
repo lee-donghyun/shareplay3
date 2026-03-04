@@ -4,7 +4,7 @@ import { useCallback, useLayoutEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useDrag } from "@use-gesture/react";
 import { animated, useSprings } from "@react-spring/web";
-import { Header, invalidateProfileCache } from "@/components/header";
+import { Header, updateProfileCache } from "@/components/header";
 import { TrackListItem } from "@/components/track-list-item";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -268,8 +268,9 @@ export function MyPageClient({
       .eq("id", profile.id);
 
     if (!error) {
-      setProfile({ ...profile, handle: editHandle, message: editMessage });
-      invalidateProfileCache();
+      const updatedProfile = { ...profile, handle: editHandle, message: editMessage };
+      setProfile(updatedProfile);
+      updateProfileCache(updatedProfile);
       setEditModalOpen(false);
     }
     setSaving(false);
