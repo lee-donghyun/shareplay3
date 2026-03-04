@@ -7,6 +7,7 @@ export const metadata: Metadata = {
   title: "My Profile",
   openGraph: {
     title: "My Profile - Shareplay",
+    description: "Manage your playlist on Shareplay.",
   },
 };
 
