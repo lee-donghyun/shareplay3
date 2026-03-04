@@ -1,6 +1,53 @@
+import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 import { ProfilePageClient } from "./client";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ handle: string }>;
+}): Promise<Metadata> {
+  const { handle } = await params;
+  const supabase = await createClient();
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("id, handle, message, avatar_url")
+    .eq("handle", handle)
+    .single();
+
+  if (!profile) {
+    return { title: "Not Found" };
+  }
+
+  const { data: tracks } = await supabase
+    .from("playlist_tracks")
+    .select("artwork_url")
+    .eq("user_id", profile.id)
+    .order("position", { ascending: true })
+    .limit(1);
+
+  const description =
+    profile.message || `Check out ${profile.handle}'s playlist on Shareplay`;
+  const ogImages: string[] = [];
+  if (tracks?.[0]?.artwork_url) {
+    ogImages.push(tracks[0].artwork_url);
+  } else if (profile.avatar_url) {
+    ogImages.push(profile.avatar_url);
+  }
+
+  return {
+    title: `${profile.handle}'s Shareplay`,
+    description,
+    openGraph: {
+      title: `${profile.handle}'s Shareplay`,
+      description,
+      type: "profile",
+      ...(ogImages.length > 0 && { images: ogImages }),
+    },
+  };
+}
 
 export default async function ProfilePage({
   params,

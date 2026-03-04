@@ -1,6 +1,14 @@
+import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { MyPageClient } from "./client";
+
+export const metadata: Metadata = {
+  title: "My Profile",
+  openGraph: {
+    title: "My Profile - Shareplay",
+  },
+};
 
 export default async function MyPage() {
   const supabase = await createClient();

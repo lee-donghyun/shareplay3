@@ -105,6 +105,12 @@
 - 가능한 shadcn/ui 의 컴포넌트를 활용하여 구현한다. (예: 버튼, 입력창, 모달 등)
 - 트랙 중복 추가는 허용하지 않는다. (동일 `trackId` 기준)
 - sonner 토스트의 Undo 유효 시간: 5초
+- 각 페이지에 적절한 OG(Open Graph) 태그를 설정한다.
+  - 루트 레이아웃: 기본 og:title("Shareplay"), og:description, og:site_name, og:type("website") 설정, title template(`%s - Shareplay`) 적용
+  - `/u/[handle]` 프로필 페이지: `generateMetadata`로 동적 OG 태그 생성 (유저 handle, message, 첫 번째 트랙 artwork을 og:image로 사용)
+  - `/privacy`, `/terms`: 정적 metadata로 페이지별 title, og:title, og:description 설정
+  - `/my`: 정적 metadata로 title, og:title 설정
+  - `/auth/login`, `/auth/onboarding`, `/my/search`: client component이므로 layout.tsx에서 metadata export
 
 ### 헤더 컴포넌트
 
