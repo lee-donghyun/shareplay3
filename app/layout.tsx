@@ -16,8 +16,17 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Shareplay",
+  title: {
+    default: "Shareplay",
+    template: "%s - Shareplay",
+  },
   description: "Share your playlist with the world",
+  openGraph: {
+    title: "Shareplay",
+    description: "Share your playlist with the world",
+    siteName: "Shareplay",
+    type: "website",
+  },
   verification: {
     google: "SlaIdfQ1Mb75JUq7z0mlUKKo8OGFTxS2v9lMsYEW24k",
   },

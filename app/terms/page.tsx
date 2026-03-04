@@ -1,4 +1,14 @@
+import type { Metadata } from "next";
 import { Header } from "@/components/header";
+
+export const metadata: Metadata = {
+  title: "Terms of Service",
+  description: "Terms and conditions for using Shareplay.",
+  openGraph: {
+    title: "Terms of Service - Shareplay",
+    description: "Terms and conditions for using Shareplay.",
+  },
+};
 
 export default function TermsOfServicePage() {
   return (
