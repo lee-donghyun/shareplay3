@@ -22,9 +22,18 @@ let profileCache: {
   loaded: boolean;
 } | null = null;
 
-/** Clear the cached profile (call after logout or profile update). */
+// Subscribers notified when profileCache is updated
+const cacheSubscribers = new Set<() => void>();
+
+/** Clear the cached profile (call after logout). */
 export function invalidateProfileCache() {
   profileCache = null;
+}
+
+/** Update the cached profile and notify the Header (call after profile edit). */
+export function updateProfileCache(profile: Profile) {
+  profileCache = { profile, isLoggedIn: true, loaded: true };
+  cacheSubscribers.forEach((fn) => fn());
 }
 
 interface HeaderProps {
@@ -46,6 +55,19 @@ export function Header({ left = "muted", right = "none" }: HeaderProps) {
     right === "profile" ? !profileCache?.loaded : false,
   );
   const [animate, setAnimate] = useState(false);
+
+  // Subscribe to cache updates so the Header re-renders after profile edits
+  useEffect(() => {
+    const handler = () => {
+      setProfile(profileCache?.profile ?? null);
+      setIsLoggedIn(profileCache?.isLoggedIn ?? false);
+      setLoading(false);
+    };
+    cacheSubscribers.add(handler);
+    return () => {
+      cacheSubscribers.delete(handler);
+    };
+  }, []);
 
   useEffect(() => {
     if (right !== "profile") return;
