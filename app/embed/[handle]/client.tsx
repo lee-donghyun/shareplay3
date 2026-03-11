@@ -79,7 +79,7 @@ export function EmbedPageClient({
         audioRef.current.pause();
         setIsPlaying(false);
       } else {
-        audioRef.current.play();
+        audioRef.current.play().catch(() => setIsPlaying(false));
         setIsPlaying(true);
       }
       return;
@@ -87,7 +87,7 @@ export function EmbedPageClient({
 
     const audio = new Audio(currentTrack.preview_url);
     audioRef.current = audio;
-    audio.play();
+    audio.play().catch(() => setIsPlaying(false));
     setIsPlaying(true);
     audio.onended = () => setIsPlaying(false);
   }, [currentTrack, isPlaying]);

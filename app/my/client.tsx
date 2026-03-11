@@ -250,8 +250,12 @@ function EmbedSection({ handle }: { handle: string }) {
   const embedCode = `<iframe src="${embedUrl}" width="400" height="300" style="border:none;border-radius:12px" allow="autoplay; encrypted-media" loading="lazy"></iframe>`;
 
   const handleCopy = async (text: string) => {
-    await navigator.clipboard.writeText(text);
-    toast("Copied to clipboard");
+    try {
+      await navigator.clipboard.writeText(text);
+      toast("Copied to clipboard");
+    } catch {
+      toast("Failed to copy");
+    }
   };
 
   return (
