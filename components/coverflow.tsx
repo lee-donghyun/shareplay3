@@ -139,6 +139,9 @@ export function Coverflow({
       return State.DRAGGING;
     },
     selectCover: (target) => {
+      if (target === memo.current.prevCurrent) {
+        return State.IDLE;
+      }
       setCurrent(target);
       onChange?.(target);
       onSelected?.(target);
