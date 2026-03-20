@@ -74,6 +74,7 @@
 - `/u/[handle]` — 프로필 페이지 (공개)
 - `/my` — 유저 프로필 페이지 (로그인 필수)
 - `/my/search` — 곡 검색 페이지 (로그인 필수)
+- `/embed/[handle]` — 임베드 전용 페이지 (iframe 삽입용, 인증 불필요)
 - `/privacy` — 개인정보처리방침 페이지
 - `/terms` — 서비스 약관 페이지
 
@@ -225,15 +226,36 @@ supabase auth 를 활용하여 Google 기반 로그인 기능을 구현한다.
   - 헤더
     - title: "{user handle}"
     - description: "{user message}"
-    - 우측 "Edit Profile" 텍스트 버튼
-      - 클릭 시 프로필 정보 편집 모달 오픈
-      - user handle 과 user message 를 수정할 수 있다.
+    - 우측 버튼 그룹
+      - "Embed" 텍스트 버튼
+        - 클릭 시 iframe 임베드 코드 모달 오픈
+        - iframe 삽입 코드(`<iframe src="...">`)를 표시한다.
+        - "Copy" 버튼: 코드를 클립보드에 복사, 복사 성공 시 toast 표시
+      - "Edit Profile" 텍스트 버튼
+        - 클릭 시 프로필 정보 편집 모달 오픈
+        - user handle 과 user message 를 수정할 수 있다.
   - 플레이리스트
     - 트랙 리스트 아이템의 리스트
       - 드래그 앤 드랍으로 트랙 순서 변경 (use-gesture 사용)
       - 좌측으로 스와이프하여 트랙 삭제 버튼 표시 (모바일 전용, md 이상에서는 비활성화)
     - 하단에 "Find more" 텍스트 버튼
       - 선택 시 곡 검색 페이지로 이동
+
+### 임베드 페이지
+
+외부 웹사이트에서 iframe으로 플레이리스트를 삽입할 수 있도록 한다.
+인증 없이 접근 가능하다. (`/embed/[handle]`)
+
+- 헤더 없음 (embed 전용 레이아웃)
+- iframe 크기에 따라 앨범 커버와 UI 를 적절히 조정한다.
+  - 커버 크기: `min(width / 2.5, (height - 100) / 2.5, 220px)`, 최소 80px
+  - 좁은 iframe (coverSize < 120px): 트랙명/아티스트명 폰트 축소, Apple Music 링크 숨김
+- 전체 콘텐츠
+  - 커버플로우 (좌우 스와이프로 트랙 선택)
+  - 트랙명, 아티스트명
+  - 재생/일시정지 버튼 (previewUrl 있는 경우)
+  - "Apple Music ↗" 링크 (trackViewUrl 있는 경우, 충분한 크기일 때만 표시)
+- `Content-Security-Policy: frame-ancestors *` 헤더로 외부 도메인에서 임베드 허용
 
 ### 곡 검색 페이지
 

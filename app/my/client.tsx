@@ -18,6 +18,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import type { Profile, PlaylistTrack } from "@/lib/types";
+import { toast } from "sonner";
 
 const SWIPE_THRESHOLD = 50;
 const DELETE_BUTTON_WIDTH = 80;
@@ -251,6 +252,7 @@ export function MyPageClient({
   const [profile, setProfile] = useState(initialProfile);
   const [tracks, setTracks] = useState(initialTracks);
   const [editModalOpen, setEditModalOpen] = useState(false);
+  const [embedModalOpen, setEmbedModalOpen] = useState(false);
   const [editHandle, setEditHandle] = useState(profile.handle);
   const [editMessage, setEditMessage] = useState(profile.message);
   const [saving, setSaving] = useState(false);
@@ -314,6 +316,9 @@ export function MyPageClient({
             ) : null}
           </div>
           <div className="flex gap-2">
+            <Button variant="link" onClick={() => setEmbedModalOpen(true)}>
+              Embed
+            </Button>
             <Button variant="link" onClick={() => setEditModalOpen(true)}>
               Edit Profile
             </Button>
@@ -405,6 +410,45 @@ export function MyPageClient({
             </Button>
             <Button onClick={handleEditProfile} disabled={saving}>
               {saving ? "Saving..." : "Save"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Embed Dialog */}
+      <Dialog open={embedModalOpen} onOpenChange={setEmbedModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Embed on your website</DialogTitle>
+          </DialogHeader>
+
+          <p className="text-sm text-muted-foreground">
+            Copy the code below and paste it into your website to embed your
+            Shareplay playlist.
+          </p>
+
+          <div className="relative">
+            <pre className="rounded-md bg-muted px-4 py-3 text-xs text-foreground overflow-x-auto whitespace-pre-wrap break-all">
+              {typeof window !== "undefined"
+                ? `<iframe\n  src="${window.location.origin}/embed/${profile.handle}"\n  width="400"\n  height="300"\n  frameborder="0"\n  style="border-radius:12px;"\n></iframe>`
+                : `<iframe\n  src="/embed/${profile.handle}"\n  width="400"\n  height="300"\n  frameborder="0"\n  style="border-radius:12px;"\n></iframe>`}
+            </pre>
+          </div>
+
+          <DialogFooter>
+            <Button
+              onClick={() => {
+                const origin =
+                  typeof window !== "undefined" ? window.location.origin : "";
+                const code = `<iframe\n  src="${origin}/embed/${profile.handle}"\n  width="400"\n  height="300"\n  frameborder="0"\n  style="border-radius:12px;"\n></iframe>`;
+                navigator.clipboard.writeText(code).then(() => {
+                  toast.success("Copied to clipboard");
+                }).catch(() => {
+                  toast.error("Failed to copy. Please copy manually.");
+                });
+              }}
+            >
+              Copy
             </Button>
           </DialogFooter>
         </DialogContent>
