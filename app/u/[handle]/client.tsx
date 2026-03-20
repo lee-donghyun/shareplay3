@@ -8,21 +8,40 @@ import type { CoverData } from "@/components/coverflow";
 import { createClient } from "@/lib/supabase/client";
 import type { Profile, PlaylistTrack } from "@/lib/types";
 
+const AUDIO_FADE_DURATION_MS = 250;
+
+function clampVolume(value: number) {
+  return Math.max(0, Math.min(1, value));
+}
+
 // bundle-dynamic-imports: Coverflow pulls in @react-spring/web + @use-gesture/react (~40kB)
 const Coverflow = dynamic(
   () => import("@/components/coverflow").then((m) => m.Coverflow),
   { ssr: false },
 );
 
-function useResponsiveSize(mobile: number, desktop: number, breakpoint = 768) {
-  const [size, setSize] = useState(mobile);
+function useResponsiveCoverSize() {
+  const [size, setSize] = useState(200);
+
   useEffect(() => {
-    const mql = window.matchMedia(`(min-width: ${breakpoint}px)`);
-    const update = () => setSize(mql.matches ? desktop : mobile);
-    update();
-    mql.addEventListener("change", update);
-    return () => mql.removeEventListener("change", update);
-  }, [mobile, desktop, breakpoint]);
+    const calculate = () => {
+      const isMd = window.matchMedia("(min-width: 768px)").matches;
+      const contentWidth = Math.max(0, Math.min(window.innerWidth, 672) - 32);
+      const widthBasedSize = contentWidth * 0.55;
+      const reservedHeight = isMd ? 360 : 300;
+      const availableHeight = Math.max(0, window.innerHeight - reservedHeight);
+      const heightBasedSize = availableHeight * 0.9;
+      const nextSize = Math.round(
+        Math.max(200, Math.min(widthBasedSize, heightBasedSize)),
+      );
+      setSize(nextSize);
+    };
+
+    calculate();
+    window.addEventListener("resize", calculate);
+    return () => window.removeEventListener("resize", calculate);
+  }, []);
+
   return size;
 }
 
@@ -42,7 +61,9 @@ export function ProfilePageClient({
   const [addedTracks, setAddedTracks] = useState<Set<number>>(new Set());
   const [isOwner, setIsOwner] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const coverSize = useResponsiveSize(200, 300);
+  const fadeSequenceRef = useRef(0);
+  const trackChangeSequenceRef = useRef(0);
+  const coverSize = useResponsiveCoverSize();
 
   useEffect(() => {
     const supabase = createClient();
@@ -52,6 +73,21 @@ export function ProfilePageClient({
       }
     });
   }, [profile.id]);
+
+  useEffect(() => {
+    return () => {
+      // Cancel in-flight fades/track switches and stop playback on page leave.
+      fadeSequenceRef.current += 1;
+      trackChangeSequenceRef.current += 1;
+
+      const audio = audioRef.current;
+      if (!audio) return;
+
+      audio.pause();
+      audio.currentTime = 0;
+      audioRef.current = null;
+    };
+  }, []);
 
   const coverData: CoverData[] = tracks.map((t) => ({
     src: t.artwork_url ? getHighResArtwork(t.artwork_url) : "",
@@ -63,36 +99,152 @@ export function ProfilePageClient({
 
   const currentTrack = tracks[currentIndex];
 
-  const togglePlay = useCallback(() => {
+  const fadeVolume = useCallback(
+    (audio: HTMLAudioElement, from: number, to: number, durationMs: number) => {
+      const sequence = ++fadeSequenceRef.current;
+      const startVolume = clampVolume(from);
+      const endVolume = clampVolume(to);
+
+      audio.volume = startVolume;
+
+      return new Promise<void>((resolve) => {
+        if (durationMs <= 0 || startVolume === endVolume) {
+          audio.volume = endVolume;
+          resolve();
+          return;
+        }
+
+        const start = performance.now();
+        const tick = (now: number) => {
+          if (sequence !== fadeSequenceRef.current) {
+            resolve();
+            return;
+          }
+
+          const progress = Math.min(1, (now - start) / durationMs);
+          const nextVolume = startVolume + (endVolume - startVolume) * progress;
+          audio.volume = clampVolume(nextVolume);
+
+          if (progress < 1) {
+            requestAnimationFrame(tick);
+            return;
+          }
+
+          resolve();
+        };
+
+        requestAnimationFrame(tick);
+      });
+    },
+    [],
+  );
+
+  const fadeOutAndStop = useCallback(
+    async (audio: HTMLAudioElement) => {
+      const currentVolume = audio.volume;
+      await fadeVolume(audio, currentVolume, 0, AUDIO_FADE_DURATION_MS);
+      audio.pause();
+      audio.currentTime = 0;
+
+      if (audioRef.current === audio) {
+        audioRef.current = null;
+      }
+
+      setIsPlaying(false);
+    },
+    [fadeVolume],
+  );
+
+  const playTrackWithFadeIn = useCallback(
+    async (previewUrl: string) => {
+      const audio = new Audio(previewUrl);
+      audio.volume = 0;
+      audioRef.current = audio;
+      await audio.play();
+      setIsPlaying(true);
+      audio.onended = () => {
+        if (audioRef.current === audio) {
+          audioRef.current = null;
+          setIsPlaying(false);
+        }
+      };
+      void fadeVolume(audio, 0, 1, AUDIO_FADE_DURATION_MS);
+    },
+    [fadeVolume],
+  );
+
+  const togglePlay = useCallback(async () => {
     if (!currentTrack?.preview_url) return;
 
     if (audioRef.current) {
       if (isPlaying) {
-        audioRef.current.pause();
-        setIsPlaying(false);
+        await fadeOutAndStop(audioRef.current);
       } else {
-        audioRef.current.play();
+        audioRef.current.volume = 0;
+        await audioRef.current.play();
         setIsPlaying(true);
+        fadeVolume(audioRef.current, 0, 1, AUDIO_FADE_DURATION_MS);
       }
       return;
     }
 
-    const audio = new Audio(currentTrack.preview_url);
-    audioRef.current = audio;
-    audio.play();
-    setIsPlaying(true);
-    audio.onended = () => setIsPlaying(false);
-  }, [currentTrack, isPlaying]);
+    await playTrackWithFadeIn(currentTrack.preview_url);
+  }, [
+    currentTrack,
+    fadeOutAndStop,
+    fadeVolume,
+    isPlaying,
+    playTrackWithFadeIn,
+  ]);
 
   // rerender-move-effect-to-event: stop audio in the change handler, not an effect
-  const handleCoverChange = useCallback((index: number) => {
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current = null;
-      setIsPlaying(false);
-    }
-    setCurrentIndex(index);
-  }, []);
+  const handleCoverChange = useCallback(
+    (index: number) => {
+      const sequence = ++trackChangeSequenceRef.current;
+      const selectedTrack = tracks[index];
+      const shouldContinuePlaying = isPlaying;
+      const currentAudio = audioRef.current;
+
+      setCurrentIndex(index);
+
+      void (async () => {
+        if (currentAudio) {
+          if (shouldContinuePlaying) {
+            await fadeOutAndStop(currentAudio);
+          } else {
+            currentAudio.pause();
+            currentAudio.currentTime = 0;
+            if (audioRef.current === currentAudio) {
+              audioRef.current = null;
+            }
+            setIsPlaying(false);
+          }
+        }
+
+        if (
+          !shouldContinuePlaying ||
+          sequence !== trackChangeSequenceRef.current
+        ) {
+          return;
+        }
+
+        if (!selectedTrack?.preview_url) {
+          setIsPlaying(false);
+          return;
+        }
+
+        try {
+          await playTrackWithFadeIn(selectedTrack.preview_url);
+        } catch {
+          if (sequence === trackChangeSequenceRef.current) {
+            audioRef.current = null;
+            setIsPlaying(false);
+          }
+        }
+      })();
+    },
+    [fadeOutAndStop, isPlaying, playTrackWithFadeIn, tracks],
+  );
 
   const handleShare = async () => {
     if (navigator.share) {
@@ -174,7 +326,7 @@ export function ProfilePageClient({
               <Coverflow
                 covers={coverData}
                 size={coverSize}
-                onChange={handleCoverChange}
+                onSelected={handleCoverChange}
               />
             </div>
           </div>
