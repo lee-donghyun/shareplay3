@@ -17,6 +17,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { toast } from "sonner";
 import type { Profile, PlaylistTrack } from "@/lib/types";
 
 const SWIPE_THRESHOLD = 50;
@@ -240,6 +241,116 @@ function TrackList({
   );
 }
 
+function EmbedSection({ handle }: { handle: string }) {
+  const [open, setOpen] = useState(false);
+  const embedUrl =
+    typeof window !== "undefined"
+      ? `${window.location.origin}/embed/${handle}`
+      : `/embed/${handle}`;
+  const embedCode = `<iframe src="${embedUrl}" width="400" height="300" style="border:none;border-radius:12px" allow="autoplay; encrypted-media" loading="lazy"></iframe>`;
+
+  const handleCopy = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      toast("Copied to clipboard");
+    } catch {
+      toast("Failed to copy");
+    }
+  };
+
+  return (
+    <>
+      <div className="px-4 pb-6">
+        <Button
+          variant="outline"
+          className="w-full md:w-auto"
+          onClick={() => setOpen(true)}
+        >
+          <svg
+            className="w-4 h-4 mr-2"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"
+            />
+          </svg>
+          Embed
+        </Button>
+      </div>
+
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Embed your Shareplay</DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">
+                Embed Link
+              </label>
+              <div className="flex gap-2">
+                <Input value={embedUrl} readOnly className="font-mono text-xs" />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleCopy(embedUrl)}
+                >
+                  Copy
+                </Button>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">
+                HTML Code
+              </label>
+              <div className="relative">
+                <Textarea
+                  value={embedCode}
+                  readOnly
+                  rows={3}
+                  className="font-mono text-xs resize-none"
+                />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="mt-2"
+                  onClick={() => handleCopy(embedCode)}
+                >
+                  Copy Code
+                </Button>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">
+                Preview
+              </label>
+              <div className="rounded-xl overflow-hidden border border-border">
+                <iframe
+                  src={embedUrl}
+                  width="100%"
+                  height="300"
+                  style={{ border: "none" }}
+                  allow="autoplay; encrypted-media"
+                  loading="lazy"
+                />
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
+
 export function MyPageClient({
   profile: initialProfile,
   initialTracks,
@@ -351,6 +462,9 @@ export function MyPageClient({
             Find more
           </Button>
         </div>
+
+        {/* Embed section */}
+        <EmbedSection handle={profile.handle} />
       </div>
 
       {/* Edit Profile Dialog */}
