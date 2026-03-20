@@ -58,6 +58,7 @@ export function ProfilePageClient({
 }) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [isAudioLoading, setIsAudioLoading] = useState(false);
   const [addedTracks, setAddedTracks] = useState<Set<number>>(new Set());
   const [isOwner, setIsOwner] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -86,6 +87,7 @@ export function ProfilePageClient({
       audio.pause();
       audio.currentTime = 0;
       audioRef.current = null;
+      setIsAudioLoading(false);
     };
   }, []);
 
@@ -151,39 +153,60 @@ export function ProfilePageClient({
       }
 
       setIsPlaying(false);
+      setIsAudioLoading(false);
     },
     [fadeVolume],
   );
 
   const playTrackWithFadeIn = useCallback(
     async (previewUrl: string) => {
+      setIsAudioLoading(true);
       const audio = new Audio(previewUrl);
       audio.volume = 0;
       audioRef.current = audio;
-      await audio.play();
-      setIsPlaying(true);
-      audio.onended = () => {
+      try {
+        await audio.play();
+        setIsPlaying(true);
+        audio.onended = () => {
+          if (audioRef.current === audio) {
+            audioRef.current = null;
+            setIsPlaying(false);
+            setIsAudioLoading(false);
+          }
+        };
+        void fadeVolume(audio, 0, 1, AUDIO_FADE_DURATION_MS);
+      } catch {
         if (audioRef.current === audio) {
           audioRef.current = null;
-          setIsPlaying(false);
         }
-      };
-      void fadeVolume(audio, 0, 1, AUDIO_FADE_DURATION_MS);
+        setIsPlaying(false);
+        throw new Error("Failed to start audio playback");
+      } finally {
+        setIsAudioLoading(false);
+      }
     },
     [fadeVolume],
   );
 
   const togglePlay = useCallback(async () => {
     if (!currentTrack?.preview_url) return;
+    if (isAudioLoading) return;
 
     if (audioRef.current) {
       if (isPlaying) {
         await fadeOutAndStop(audioRef.current);
       } else {
-        audioRef.current.volume = 0;
-        await audioRef.current.play();
-        setIsPlaying(true);
-        fadeVolume(audioRef.current, 0, 1, AUDIO_FADE_DURATION_MS);
+        setIsAudioLoading(true);
+        try {
+          audioRef.current.volume = 0;
+          await audioRef.current.play();
+          setIsPlaying(true);
+          fadeVolume(audioRef.current, 0, 1, AUDIO_FADE_DURATION_MS);
+        } catch {
+          setIsPlaying(false);
+        } finally {
+          setIsAudioLoading(false);
+        }
       }
       return;
     }
@@ -193,6 +216,7 @@ export function ProfilePageClient({
     currentTrack,
     fadeOutAndStop,
     fadeVolume,
+    isAudioLoading,
     isPlaying,
     playTrackWithFadeIn,
   ]);
@@ -349,9 +373,30 @@ export function ProfilePageClient({
                     variant="ghost"
                     size="icon"
                     onClick={togglePlay}
+                    disabled={isAudioLoading}
                     className="w-12 h-12 rounded-full bg-white/10 backdrop-blur-sm hover:bg-white/20"
                   >
-                    {isPlaying ? (
+                    {isAudioLoading ? (
+                      <svg
+                        className="w-5 h-5 text-white animate-spin"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="3"
+                        />
+                        <path
+                          className="opacity-90"
+                          fill="currentColor"
+                          d="M22 12a10 10 0 0 0-10-10v3a7 7 0 0 1 7 7h3z"
+                        />
+                      </svg>
+                    ) : isPlaying ? (
                       <svg
                         className="w-5 h-5 text-white"
                         fill="currentColor"
