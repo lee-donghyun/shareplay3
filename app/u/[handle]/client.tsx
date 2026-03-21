@@ -1,6 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import dynamic from "next/dynamic";
 import { Header } from "@/components/header";
 import { Button } from "@/components/ui/button";
@@ -23,7 +29,7 @@ const Coverflow = dynamic(
 function useResponsiveCoverSize() {
   const [size, setSize] = useState(200);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const calculate = () => {
       const isMd = window.matchMedia("(min-width: 768px)").matches;
       const contentWidth = Math.max(0, Math.min(window.innerWidth, 672) - 32);
@@ -37,9 +43,13 @@ function useResponsiveCoverSize() {
       setSize(nextSize);
     };
 
+    const resizeObserver = new ResizeObserver(() => {
+      calculate();
+    });
+
     calculate();
-    window.addEventListener("resize", calculate);
-    return () => window.removeEventListener("resize", calculate);
+    resizeObserver.observe(document.documentElement);
+    return () => resizeObserver.disconnect();
   }, []);
 
   return size;
@@ -350,6 +360,7 @@ export function ProfilePageClient({
               <Coverflow
                 covers={coverData}
                 size={coverSize}
+                key={coverSize}
                 onSelected={handleCoverChange}
               />
             </div>
