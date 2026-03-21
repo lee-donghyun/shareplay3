@@ -25,6 +25,7 @@
 
 - .env.local 의 값을 참고한다. (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`)
 - auth: google provider 를 활용한 로그인 기능을 구현한다.
+  - 클라이언트 컴포넌트에서는 인증 유저 조회(`auth.getUser`)와 로그인 여부 분기를 직접 중복 구현하지 않고 `lib/supabase/use-auth.ts`의 `useAuth` 훅을 재사용한다.
   - 문서를 참고한다. https://supabase.com/docs/guides/auth/social-login/auth-google
   - Google Cloud Console 설정:
     - OAuth 2.0 Client ID 생성 (Web Application 유형)

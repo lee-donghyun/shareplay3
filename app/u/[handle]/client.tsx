@@ -1,24 +1,14 @@
 "use client";
 
-import {
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-} from "react";
+import { useLayoutEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import { Header } from "@/components/header";
 import { Button } from "@/components/ui/button";
 import type { CoverData } from "@/components/coverflow";
 import { createClient } from "@/lib/supabase/client";
+import { useAuth } from "@/lib/supabase/use-auth";
 import type { Profile, PlaylistTrack } from "@/lib/types";
-
-const AUDIO_FADE_DURATION_MS = 250;
-
-function clampVolume(value: number) {
-  return Math.max(0, Math.min(1, value));
-}
+import { useMusicPlayer } from "./use-music-player";
 
 // bundle-dynamic-imports: Coverflow pulls in @react-spring/web + @use-gesture/react (~40kB)
 const Coverflow = dynamic(
@@ -67,39 +57,10 @@ export function ProfilePageClient({
   tracks: PlaylistTrack[];
 }) {
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [isAudioLoading, setIsAudioLoading] = useState(false);
   const [addedTracks, setAddedTracks] = useState<Set<number>>(new Set());
-  const [isOwner, setIsOwner] = useState(false);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  const fadeSequenceRef = useRef(0);
-  const trackChangeSequenceRef = useRef(0);
+  const { user, requireLogin } = useAuth();
   const coverSize = useResponsiveCoverSize();
-
-  useEffect(() => {
-    const supabase = createClient();
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (user && user.id === profile.id) {
-        setIsOwner(true);
-      }
-    });
-  }, [profile.id]);
-
-  useEffect(() => {
-    return () => {
-      // Cancel in-flight fades/track switches and stop playback on page leave.
-      fadeSequenceRef.current += 1;
-      trackChangeSequenceRef.current += 1;
-
-      const audio = audioRef.current;
-      if (!audio) return;
-
-      audio.pause();
-      audio.currentTime = 0;
-      audioRef.current = null;
-      setIsAudioLoading(false);
-    };
-  }, []);
+  const isOwner = user?.id === profile.id;
 
   const coverData: CoverData[] = tracks.map((t) => ({
     src: t.artwork_url ? getHighResArtwork(t.artwork_url) : "",
@@ -110,175 +71,8 @@ export function ProfilePageClient({
   }));
 
   const currentTrack = tracks[currentIndex];
-
-  const fadeVolume = useCallback(
-    (audio: HTMLAudioElement, from: number, to: number, durationMs: number) => {
-      const sequence = ++fadeSequenceRef.current;
-      const startVolume = clampVolume(from);
-      const endVolume = clampVolume(to);
-
-      audio.volume = startVolume;
-
-      return new Promise<void>((resolve) => {
-        if (durationMs <= 0 || startVolume === endVolume) {
-          audio.volume = endVolume;
-          resolve();
-          return;
-        }
-
-        const start = performance.now();
-        const tick = (now: number) => {
-          if (sequence !== fadeSequenceRef.current) {
-            resolve();
-            return;
-          }
-
-          const progress = Math.min(1, (now - start) / durationMs);
-          const nextVolume = startVolume + (endVolume - startVolume) * progress;
-          audio.volume = clampVolume(nextVolume);
-
-          if (progress < 1) {
-            requestAnimationFrame(tick);
-            return;
-          }
-
-          resolve();
-        };
-
-        requestAnimationFrame(tick);
-      });
-    },
-    [],
-  );
-
-  const fadeOutAndStop = useCallback(
-    async (audio: HTMLAudioElement) => {
-      const currentVolume = audio.volume;
-      await fadeVolume(audio, currentVolume, 0, AUDIO_FADE_DURATION_MS);
-      audio.pause();
-      audio.currentTime = 0;
-
-      if (audioRef.current === audio) {
-        audioRef.current = null;
-      }
-
-      setIsPlaying(false);
-      setIsAudioLoading(false);
-    },
-    [fadeVolume],
-  );
-
-  const playTrackWithFadeIn = useCallback(
-    async (previewUrl: string) => {
-      setIsAudioLoading(true);
-      const audio = new Audio(previewUrl);
-      audio.volume = 0;
-      audioRef.current = audio;
-      try {
-        await audio.play();
-        setIsPlaying(true);
-        audio.onended = () => {
-          if (audioRef.current === audio) {
-            audioRef.current = null;
-            setIsPlaying(false);
-            setIsAudioLoading(false);
-          }
-        };
-        void fadeVolume(audio, 0, 1, AUDIO_FADE_DURATION_MS);
-      } catch {
-        if (audioRef.current === audio) {
-          audioRef.current = null;
-        }
-        setIsPlaying(false);
-        throw new Error("Failed to start audio playback");
-      } finally {
-        setIsAudioLoading(false);
-      }
-    },
-    [fadeVolume],
-  );
-
-  const togglePlay = useCallback(async () => {
-    if (!currentTrack?.preview_url) return;
-    if (isAudioLoading) return;
-
-    if (audioRef.current) {
-      if (isPlaying) {
-        await fadeOutAndStop(audioRef.current);
-      } else {
-        setIsAudioLoading(true);
-        try {
-          audioRef.current.volume = 0;
-          await audioRef.current.play();
-          setIsPlaying(true);
-          fadeVolume(audioRef.current, 0, 1, AUDIO_FADE_DURATION_MS);
-        } catch {
-          setIsPlaying(false);
-        } finally {
-          setIsAudioLoading(false);
-        }
-      }
-      return;
-    }
-
-    await playTrackWithFadeIn(currentTrack.preview_url);
-  }, [
-    currentTrack,
-    fadeOutAndStop,
-    fadeVolume,
-    isAudioLoading,
-    isPlaying,
-    playTrackWithFadeIn,
-  ]);
-
-  // rerender-move-effect-to-event: stop audio in the change handler, not an effect
-  const handleCoverChange = useCallback(
-    (index: number) => {
-      const sequence = ++trackChangeSequenceRef.current;
-      const selectedTrack = tracks[index];
-      const shouldContinuePlaying = isPlaying;
-      const currentAudio = audioRef.current;
-
-      setCurrentIndex(index);
-
-      void (async () => {
-        if (currentAudio) {
-          if (shouldContinuePlaying) {
-            await fadeOutAndStop(currentAudio);
-          } else {
-            currentAudio.pause();
-            currentAudio.currentTime = 0;
-            if (audioRef.current === currentAudio) {
-              audioRef.current = null;
-            }
-            setIsPlaying(false);
-          }
-        }
-
-        if (
-          !shouldContinuePlaying ||
-          sequence !== trackChangeSequenceRef.current
-        ) {
-          return;
-        }
-
-        if (!selectedTrack?.preview_url) {
-          setIsPlaying(false);
-          return;
-        }
-
-        try {
-          await playTrackWithFadeIn(selectedTrack.preview_url);
-        } catch {
-          if (sequence === trackChangeSequenceRef.current) {
-            audioRef.current = null;
-            setIsPlaying(false);
-          }
-        }
-      })();
-    },
-    [fadeOutAndStop, isPlaying, playTrackWithFadeIn, tracks],
-  );
+  const { isPlaying, isAudioLoading, togglePlay } =
+    useMusicPlayer(currentTrack);
 
   const handleShare = async () => {
     if (navigator.share) {
@@ -291,21 +85,17 @@ export function ProfilePageClient({
 
   const handleAddToMyShareplay = async () => {
     if (!currentTrack) return;
-    const supabase = createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
 
-    if (!user) {
-      window.location.href = "/auth/login";
-      return;
-    }
+    const authUser = await requireLogin("/auth/login");
+    if (!authUser) return;
+
+    const supabase = createClient();
 
     // Get current max position
     const { data: existingTracks } = await supabase
       .from("playlist_tracks")
       .select("position")
-      .eq("user_id", user.id)
+      .eq("user_id", authUser.id)
       .order("position", { ascending: false })
       .limit(1);
 
@@ -315,7 +105,7 @@ export function ProfilePageClient({
         : 0;
 
     await supabase.from("playlist_tracks").insert({
-      user_id: user.id,
+      user_id: authUser.id,
       track_id: currentTrack.track_id,
       track_name: currentTrack.track_name,
       artist_name: currentTrack.artist_name,
@@ -361,7 +151,7 @@ export function ProfilePageClient({
                 covers={coverData}
                 size={coverSize}
                 key={coverSize}
-                onSelected={handleCoverChange}
+                onSelected={setCurrentIndex}
               />
             </div>
           </div>

@@ -139,13 +139,12 @@ export function Coverflow({
       return State.DRAGGING;
     },
     selectCover: (target) => {
-      if (target === memo.current.prevCurrent) {
-        return State.IDLE;
+      if (memo.current.prevCurrent !== target) {
+        setCurrent(target);
+        onChange?.(target);
+        onSelected?.(target);
+        memo.current.prevCurrent = target;
       }
-      setCurrent(target);
-      onChange?.(target);
-      onSelected?.(target);
-      memo.current.prevCurrent = target;
       coversApi.start((index) => {
         return { to: coverUtil.getTransform(index - target) };
       });

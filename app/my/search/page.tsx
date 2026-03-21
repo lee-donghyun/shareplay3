@@ -7,6 +7,7 @@ import { TrackListItem } from "@/components/track-list-item";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { createClient } from "@/lib/supabase/client";
+import { useAuth } from "@/lib/supabase/use-auth";
 import { toast } from "sonner";
 import type { ITunesTrack } from "@/lib/types";
 
@@ -25,26 +26,29 @@ export default function SearchPage() {
   const undoTimeoutRefs = useRef<Map<number, ReturnType<typeof setTimeout>>>(
     new Map(),
   );
+  const { user, loading: authLoading, requireLogin } = useAuth();
 
   // Load existing track IDs
   useEffect(() => {
     const loadExisting = async () => {
+      if (authLoading) return;
+
+      if (!user) {
+        setAddedTrackIds(new Set());
+        return;
+      }
+
       const supabase = createClient();
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (user) {
-        const { data } = await supabase
-          .from("playlist_tracks")
-          .select("track_id")
-          .eq("user_id", user.id);
-        if (data) {
-          setAddedTrackIds(new Set(data.map((t) => t.track_id)));
-        }
+      const { data } = await supabase
+        .from("playlist_tracks")
+        .select("track_id")
+        .eq("user_id", user.id);
+      if (data) {
+        setAddedTrackIds(new Set(data.map((t) => t.track_id)));
       }
     };
-    loadExisting();
-  }, []);
+    void loadExisting();
+  }, [authLoading, user]);
 
   // Debounced search
   useEffect(() => {
@@ -80,68 +84,69 @@ export default function SearchPage() {
     };
   }, [query]);
 
-  const handleAdd = useCallback(async (track: ITunesTrack) => {
-    if (addedTrackIdsRef.current.has(track.trackId)) return;
+  const handleAdd = useCallback(
+    async (track: ITunesTrack) => {
+      if (addedTrackIdsRef.current.has(track.trackId)) return;
 
-    const supabase = createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+      const authUser = await requireLogin("/auth/login");
+      if (!authUser) return;
 
-    if (!user) return;
+      const supabase = createClient();
 
-    // Get next position
-    const { data: existingTracks } = await supabase
-      .from("playlist_tracks")
-      .select("position")
-      .eq("user_id", user.id)
-      .order("position", { ascending: false })
-      .limit(1);
+      // Get next position
+      const { data: existingTracks } = await supabase
+        .from("playlist_tracks")
+        .select("position")
+        .eq("user_id", authUser.id)
+        .order("position", { ascending: false })
+        .limit(1);
 
-    const nextPosition =
-      existingTracks && existingTracks.length > 0
-        ? existingTracks[0].position + 1
-        : 0;
+      const nextPosition =
+        existingTracks && existingTracks.length > 0
+          ? existingTracks[0].position + 1
+          : 0;
 
-    const { data: inserted } = await supabase
-      .from("playlist_tracks")
-      .insert({
-        user_id: user.id,
-        track_id: track.trackId,
-        track_name: track.trackName,
-        artist_name: track.artistName,
-        collection_name: track.collectionName,
-        artwork_url: track.artworkUrl100,
-        preview_url: track.previewUrl,
-        track_view_url: track.trackViewUrl,
-        position: nextPosition,
-      })
-      .select("id")
-      .single();
+      const { data: inserted } = await supabase
+        .from("playlist_tracks")
+        .insert({
+          user_id: authUser.id,
+          track_id: track.trackId,
+          track_name: track.trackName,
+          artist_name: track.artistName,
+          collection_name: track.collectionName,
+          artwork_url: track.artworkUrl100,
+          preview_url: track.previewUrl,
+          track_view_url: track.trackViewUrl,
+          position: nextPosition,
+        })
+        .select("id")
+        .single();
 
-    setAddedTrackIds((prev) => new Set(prev).add(track.trackId));
+      setAddedTrackIds((prev) => new Set(prev).add(track.trackId));
 
-    // Undo toast
-    toast(`Added "${track.trackName}"`, {
-      action: {
-        label: "Undo",
-        onClick: async () => {
-          if (inserted) {
-            await supabase
-              .from("playlist_tracks")
-              .delete()
-              .eq("id", inserted.id);
-            setAddedTrackIds((prev) => {
-              const next = new Set(prev);
-              next.delete(track.trackId);
-              return next;
-            });
-          }
+      // Undo toast
+      toast(`Added "${track.trackName}"`, {
+        action: {
+          label: "Undo",
+          onClick: async () => {
+            if (inserted) {
+              await supabase
+                .from("playlist_tracks")
+                .delete()
+                .eq("id", inserted.id);
+              setAddedTrackIds((prev) => {
+                const next = new Set(prev);
+                next.delete(track.trackId);
+                return next;
+              });
+            }
+          },
         },
-      },
-      duration: 5000,
-    });
-  }, []);
+        duration: 5000,
+      });
+    },
+    [requireLogin],
+  );
 
   // Cleanup undo timeouts
   useEffect(() => {

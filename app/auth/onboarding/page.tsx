@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { useAuth } from "@/lib/supabase/use-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -13,6 +14,7 @@ export default function OnboardingPage() {
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { user, refreshUser } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -21,11 +23,9 @@ export default function OnboardingPage() {
 
     try {
       const supabase = createClient();
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      const authUser = user ?? (await refreshUser());
 
-      if (!user) {
+      if (!authUser) {
         setError("Not authenticated");
         return;
       }
@@ -44,10 +44,10 @@ export default function OnboardingPage() {
       }
 
       const { error: insertError } = await supabase.from("profiles").insert({
-        id: user.id,
+        id: authUser.id,
         handle,
         message,
-        avatar_url: user.user_metadata?.avatar_url || null,
+        avatar_url: authUser.user_metadata?.avatar_url || null,
       });
 
       if (insertError) {

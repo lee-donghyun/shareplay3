@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { useAuth } from "@/lib/supabase/use-auth";
 import type { Profile } from "@/lib/types";
 import {
   DropdownMenu,
@@ -43,6 +44,7 @@ interface HeaderProps {
 
 export function Header({ left = "muted", right = "none" }: HeaderProps) {
   const router = useRouter();
+  const { user, isLoggedIn: authIsLoggedIn, loading: authLoading } = useAuth();
 
   // Initialise from cache when available so the first render is instant
   const [profile, setProfile] = useState<Profile | null>(
@@ -75,10 +77,12 @@ export function Header({ left = "muted", right = "none" }: HeaderProps) {
     // If we already have a cached result, skip the fetch
     if (profileCache?.loaded) return;
 
+    if (authLoading) return;
+
     const supabase = createClient();
-    supabase.auth.getUser().then(async ({ data: { user } }) => {
+    void (async () => {
       let fetchedProfile: Profile | null = null;
-      const loggedIn = !!user;
+      const loggedIn = authIsLoggedIn;
 
       if (user) {
         const { data } = await supabase
@@ -100,8 +104,8 @@ export function Header({ left = "muted", right = "none" }: HeaderProps) {
       setIsLoggedIn(loggedIn);
       setLoading(false);
       setAnimate(true);
-    });
-  }, [right]);
+    })();
+  }, [authIsLoggedIn, authLoading, right, user]);
 
   const handleLogout = async () => {
     const supabase = createClient();
